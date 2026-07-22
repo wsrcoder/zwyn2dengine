@@ -1,0 +1,69 @@
+{
+    "activeFile": "RiverForest001.tsx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "CountryHouse001.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "FishermanVillage001.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "Map001.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 729.3333333333333,
+                "y": 887.3333333333333
+            }
+        },
+        "Map001.tmx#CountryHouse001": {
+            "scaleInDock": 1
+        },
+        "Map002.tmx": {
+            "scale": 1,
+            "selectedLayer": 6,
+            "viewCenter": {
+                "x": 971,
+                "y": 884.5
+            }
+        },
+        "RiverForest001.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "collision_tileset.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        }
+    },
+    "last.exportedFilePath": "G:/pokemon/project3/Editor/project1",
+    "last.imagePath": "G:/pokemon/project3/Assets/Tilesets",
+    "map.height": 40,
+    "map.lastUsedExportFilter": "Arquivos de mapa JSON (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 50,
+    "openFiles": [
+        "Map001.tmx",
+        "CountryHouse001.tsx",
+        "collision_tileset.tsx",
+        "FishermanVillage001.tsx",
+        "RiverForest001.tsx",
+        "Map002.tmx"
+    ],
+    "project": "project1.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "Map001.tmx",
+        "CountryHouse001.tsx",
+        "collision_tileset.tsx",
+        "FishermanVillage001.tsx",
+        "Map002.tmx",
+        "RiverForest001.tsx"
+    ],
+    "tileset.lastUsedExportFilter": "Todos os Ficheiros (*)",
+    "tileset.lastUsedFormat": "tsx"
+}
