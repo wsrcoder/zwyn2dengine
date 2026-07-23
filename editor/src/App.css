@@ -1,0 +1,84 @@
+/* 1. Menu Superior */
+.top-menu {
+  height: 30px;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #3f3f3f;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  gap: 20px;
+  color: #cccccc;
+  font-size: 13px;
+  flex-shrink: 0; /* Garante que o menu não encolha */
+
+  border: 2px solid #ff5555;
+}
+
+.menu-brand {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.menu-items {
+  display: flex;
+  gap: 15px;
+}
+
+.menu-items span {
+  cursor: pointer;
+  color: #bbbbbb;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.menu-items span:hover {
+  color: #ffffff;
+  background-color: #3f3f3f;
+}
+
+.app-container{
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/*Bloco central do meio: coloca as 3 colunas lado a lado*/
+.main-content{
+  display: flex;
+  flex-direction: row; /*opicional pois row é o padrao*/
+  flex: 1; /*ocupa todo o espaço vertical livre*/
+  width: 100vw;
+  overflow: hidden;
+
+}
+
+.sidebar-left{
+  width: 260px;       /* Tamanho fixo ideal para painéis de árvore ou listas */
+  flex-shrink: 0;     /* Impede que a barra encolha se a tela diminuir */
+
+  border: 2px solid #55ff55;
+  background-color: rgba(0, 255, 0, 0.03);
+}
+
+.viewport-container{
+  flex: 1; /* Ocupa todo o espaço horizontal restante */
+  min-width: 400px; /* Garante que a viewport não fique muito estreita */
+  overflow: auto; /* Permite rolagem se o conteúdo for maior que a área visível */
+
+  border: 2px solid #ffff55;
+  background-color: rgba(255, 255, 0, 0.3);
+}
+
+.sidebar-right{
+  width: 300px;       /* Tamanho fixo ideal para painéis de propriedades ou detalhes */
+  flex-shrink: 0;     /* Impede que a barra encolha se a tela diminuir */
+
+  border: 2px solid #5555ff;
+  background-color: rgba(0, 0, 255, 0.03);
+}
+
+.status-bar{
+  border: 2px solid #ff55ff;
+}
