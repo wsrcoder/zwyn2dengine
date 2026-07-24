@@ -22,6 +22,7 @@ export class MapRenderer {
         };
 
         this.showGrid = true;
+        this.tilesetImages = {};
 
         this.initialize();
     }
@@ -38,14 +39,27 @@ export class MapRenderer {
         this.initialize();
     }
 
+    setTilesetImage(tilesetName, imageElement) {
+        this.tilesetImages[tilesetName] = imageElement;
+    }
+
     updateMapData(mapData, activeLayer, showGrid = true) {
         if (mapData) {
             this.mapData = mapData;
-            this.initialize(); // Garante que o canvas redimensiona se o mapData externo mudar de tamanho!
+            
+            const cols = mapData.columns || mapData.mapWidth || 20;
+            const rows = mapData.rows || mapData.mapHeight || 15;
+            const tWidth = mapData.tile?.width || mapData.tileSize || 32;
+
+            this.mapData.mapWidth = cols;
+            this.mapData.mapHeight = rows;
+            this.mapData.tileSize = tWidth;
+
+            this.initialize();
         }
 
         if (activeLayer !== undefined) {
-            this.activeLayer = activeLayer; // Espera { bucketId, index }
+            this.activeLayer = activeLayer; 
         }
 
         if (showGrid !== undefined) {
@@ -58,42 +72,56 @@ export class MapRenderer {
     }
 
     render() {
-        if (!this.ctx) {
-            console.error("Canvas context is not available.");
-            return;
-        }
+        if (!this.ctx) return;
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        //desempacot os buckets de mapData (garantindo fallbacks caso venham vazios)
-        const [baseLayers = [], dynamicLayers = [], eventLayers = []] = this.mapData.layers || [];
-
-
-        this.renderBucket(baseLayers);
-
-        this.renderBucket(dynamicLayers);
-
-        this.renderBucket(eventLayers);
+        const layers = this.mapData.layers || [];
+        this.renderBucket(layers);
 
         if (this.showGrid) {
             this.renderGridOverlay();
         }
+        
     }
 
     renderBucket(layerList) {
-        if (!Array.isArray(layerList) || layerList.length === 0) {
-            return; // Removi o console.warn para não poluir o console enquanto o mapa estiver vazio no início
-        }
+        if (!Array.isArray(layerList) || layerList.length === 0) return;
 
         layerList.forEach(layer => {
-            if(!layer.visible) return; // Pula camadas invisíveis
+            if (!layer.visible) return; 
 
-            if (layer.type === LayerType.TILE) {
-                // Futura renderização de tiles
-            } else if (layer.type === LayerType.EVENT) {
-                // Futura renderização de eventos
-            } else if (layer.type === LayerType.MARKER){
+            if (layer.type === LayerType.TILE && Array.isArray(layer.data)) {
+                const tilesets = this.mapData.tilesets || [];
+                const tileWidth = this.mapData.tile?.width || this.mapData.tileSize;
+                const tileHeight = this.mapData.tile?.height || this.mapData.tileSize;
+                const mapWidth = this.mapData.columns || this.mapData.mapWidth;
 
+                layer.data.forEach((gid, index) => {
+                    if (gid === 0) return; 
+
+                    const tileset = tilesets.slice().reverse().find(ts => gid >= ts.firstgid);
+                    if (!tileset) return;
+
+                    const localTileId = gid - tileset.firstgid;
+                    const img = this.tilesetImages[tileset.name];
+                    
+                    if (!img) return; 
+
+                    const col = index % mapWidth;
+                    const row = Math.floor(index / mapWidth);
+
+                    const destX = col * tileWidth;
+                    const destY = row * tileHeight;
+
+                    const rect = tileset.getTileRect(localTileId);
+
+                    this.ctx.drawImage(
+                        img,
+                        rect.x, rect.y, rect.width, rect.height,
+                        destX, destY, tileWidth, tileHeight
+                    );
+                });
             }
         });
     }
@@ -103,32 +131,19 @@ export class MapRenderer {
 
         this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         this.ctx.lineWidth = 1;
-
         this.ctx.beginPath();
 
-        // Linhas verticais
         for (let x = 0; x <= mapWidth * tileSize; x += tileSize) {
             this.ctx.moveTo(x, 0);
             this.ctx.lineTo(x, mapHeight * tileSize);
         }
 
-        // Linhas horizontais
         for (let y = 0; y <= mapHeight * tileSize; y += tileSize) {
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(mapWidth * tileSize, y);
         }
 
         this.ctx.stroke();
-    }
-
-    getActiveLayerObject() {
-        if (!this.activeLayer || !this.mapData.layers) return null;
-        const { bucketId, index } = this.activeLayer;
-        
-        const bucket = this.mapData.layers[bucketId];
-        if (!bucket) return null;
-
-        return bucket[index] || null;
     }
 
     handleClickEvent(event) {

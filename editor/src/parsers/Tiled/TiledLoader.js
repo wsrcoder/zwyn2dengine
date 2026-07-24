@@ -96,10 +96,11 @@ export class TiledLoader {
                 tilesets: processedTilesets
             };
 
+            console.log(result);
             return {sucess: true, data: result}; 
 
         } catch (error) {
-            
+
             return {sucess: false, error: error.message};
         }
     }

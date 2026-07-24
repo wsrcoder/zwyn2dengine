@@ -2,7 +2,7 @@
 import { LayerModel } from "./LayerModel.js";
 import { TilesetModel } from "./TilesetModel.js";
 
-export class MapModel {
+export class MapDataModel {
     constructor(rawJsonData) {
         this.columns = rawJsonData.width;
         this.rows = rawJsonData.height;

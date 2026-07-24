@@ -1,6 +1,7 @@
 
 export const LayerType = Object.freeze({
+    BACKGROUND: 'background',
     TILE: 'tile',
     EVENT: 'event',
-    MARKER: 'marker'
+    GRID: 'grid',
 });

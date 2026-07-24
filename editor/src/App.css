@@ -67,8 +67,8 @@
   min-width: 400px; /* Garante que a viewport não fique muito estreita */
   overflow: auto; /* Permite rolagem se o conteúdo for maior que a área visível */
 
-  border: 2px solid #ffff55;
-  background-color: rgba(255, 255, 0, 0.3);
+  /*border: 2px solid #ffff55;
+  background-color: rgba(255, 255, 0, 0.3);*/
 }
 
 .sidebar-right{
