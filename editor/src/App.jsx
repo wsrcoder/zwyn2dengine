@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TopMenu from './components/TopMenu/TopMenu';
 import SidebarLeft from './components/SidebarLeft';
 import Viewport from './components/Viewport/Viewport.jsx';
-import SidebarRight from './components/SidebarRight';
+import SidebarRight from './components/SidebarRight/SidebarRight.jsx';
 import StatusBar from './components/StatusBar';
 
 import { TiledLoader } from './parsers/Tiled/TiledLoader.js';

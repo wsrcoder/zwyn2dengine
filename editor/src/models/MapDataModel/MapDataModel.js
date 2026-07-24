@@ -41,7 +41,7 @@ export class MapDataModel {
         
         // 4. UI Layer inicial garantido
         this.UILayer = [
-            this.createLayer({ name: 'UI Layer 1', visible: true, opacity: 1, type: LayerType.GRID }, LayerType.UI)
+            this.createLayer({ name: 'UI Layer 1', visible: true, opacity: 1, type: LayerType.UI }, LayerType.UI)
         ];
     }
 

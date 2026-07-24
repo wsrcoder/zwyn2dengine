@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MapRenderer } from '../../core/MapRenderer';
+import { MapRenderer } from '../../renderers/MapRenderer';
 
 import './viewport.css';
 
