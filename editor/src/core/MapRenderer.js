@@ -1,3 +1,4 @@
+
 import { LayerType } from '../Constants/LayerType.js';
 
 export class MapRenderer {
@@ -13,7 +14,9 @@ export class MapRenderer {
             mapWidth: mapWidth,
             mapHeight: mapHeight,
             tileSize: tileSize,
-            layers: []
+            backgroundLayers: [],
+            mapLayers: [],
+            eventLayers: []
         };
 
         this.activeLayer = {
@@ -55,6 +58,11 @@ export class MapRenderer {
             this.mapData.mapHeight = rows;
             this.mapData.tileSize = tWidth;
 
+            // Garante a separação correta ou inicializa os arrays caso o JSON venha estruturado diferente
+            this.mapData.backgroundLayers = mapData.backgroundLayers || [];
+            this.mapData.mapLayers = mapData.mapLayers || mapData.layers || [];
+            this.mapData.eventLayers = mapData.eventLayers || [];
+
             this.initialize();
         }
 
@@ -76,22 +84,38 @@ export class MapRenderer {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const layers = this.mapData.layers || [];
-        this.renderBucket(layers);
+        // 1. Renderiza as camadas de fundo / paralaxes independentes
+        this.renderBackgroundLayers();
 
+        // 2. Renderiza as camadas estruturais do mapa
+        this.renderMapLayers();
+
+        // 3. Renderiza a camada de eventos
+        this.renderEventLayer();
+
+        // 4. Camada de Grid isolada por cima de tudo
         if (this.showGrid) {
-            this.renderGridOverlay();
+            this.renderUILayer();
         }
-        
     }
 
-    renderBucket(layerList) {
-        if (!Array.isArray(layerList) || layerList.length === 0) return;
+    renderBackgroundLayers() {
+        if (!Array.isArray(this.mapData.backgroundLayers)) return;
 
-        layerList.forEach(layer => {
+        this.mapData.backgroundLayers.forEach(layer => {
+            if (!layer.visible) return;
+            // Lógica específica para desenhar paralaxes / background
+        });
+    }
+
+    renderMapLayers() {
+        const layers = this.mapData.mapLayers;
+        if (!Array.isArray(layers) || layers.length === 0) return;
+
+        layers.forEach(layer => {
             if (!layer.visible) return; 
 
-            if (layer.type === LayerType.TILE && Array.isArray(layer.data)) {
+            if (Array.isArray(layer.data)) {
                 const tilesets = this.mapData.tilesets || [];
                 const tileWidth = this.mapData.tile?.width || this.mapData.tileSize;
                 const tileHeight = this.mapData.tile?.height || this.mapData.tileSize;
@@ -126,7 +150,24 @@ export class MapRenderer {
         });
     }
 
-    renderGridOverlay() {
+    renderEventLayer() {
+        if (!Array.isArray(this.mapData.eventLayers)) return;
+
+        this.mapData.eventLayers.forEach(layer => {
+            if (!layer.visible) return;
+            // Lógica para desenhar os ícones de eventos e colisões
+        });
+    }
+
+    renderUILayer() {
+        // Assume que a camada de grid/UI está armazenada em this.mapData.UILayer
+        const uiLayers = this.mapData.UILayer || [];
+        
+        // Verifica se existe pelo menos uma camada de grid visível
+        const shouldDrawGrid = uiLayers.some(layer => layer.visible !== false);
+        
+        if (!shouldDrawGrid || !this.showGrid) return;
+
         const { mapWidth, mapHeight, tileSize } = this.mapData;
 
         this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';

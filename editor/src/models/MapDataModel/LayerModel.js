@@ -2,10 +2,10 @@
 import { LayerType } from "../../Constants/LayerType";
 export class LayerModel{
 
-    constructor(rawLayerData){
+    constructor(rawLayerData, layerType){
         this.id = rawLayerData.id;
         this.name = rawLayerData.name;
-        this.type = LayerType.TILE; //tileLayer, imageLayer, eventLayer, uiLayer
+        this.type = layerType; //tileLayer, imageLayer, eventLayer, uiLayer
         this.visible = rawLayerData.visible !== undefined ? rawLayerData.visible : true;
         this.opacity = rawLayerData.opacity !== undefined ? rawLayerData.opacity : 1.0;
         
