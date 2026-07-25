@@ -1,5 +1,5 @@
 
-import { LayerType } from "../../Constants/LayerType";
+import { LayerType } from "../../constants/LayerType";
 export class LayerModel{
 
     constructor(rawLayerData){

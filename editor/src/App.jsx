@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TopMenu from './components/TopMenu/TopMenu';
-import SidebarLeft from './components/SidebarLeft';
+import SidebarLeft from './components/SidebarLeft/SidebarLeft.jsx';
 import Viewport from './components/Viewport/Viewport.jsx';
 import SidebarRight from './components/SidebarRight/SidebarRight.jsx';
 import StatusBar from './components/StatusBar';

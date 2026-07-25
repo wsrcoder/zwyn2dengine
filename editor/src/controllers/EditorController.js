@@ -1,4 +1,6 @@
 
+import { LayerType } from "../constants/LayerType";
+import { LayerBucketMap } from "../constants/LayerBucketMap";
 
 export class EditorController {
     constructor() {
@@ -63,10 +65,33 @@ export class EditorController {
     /**
      * Altera a camada ativa onde o usuário vai desenhar/interagir
      */
-    setActiveLayer(category, index) {
+    setActiveLayer(bucketOrType, index) {
+        let category = bucketOrType;
+
+        // Se o argumento passado foi um LayerType (ex: 'tile', 'background'), 
+        // converte para o nome do bucket correspondente usando o LayerBucketMap
+        if (Object.values(LayerType).includes(bucketOrType)) {
+            category = LayerBucketMap[bucketOrType];
+        }
+
+        // BLOQUEIO DE SEGURANÇADA: A camada de UI é exclusiva do sistema e intocável pelo usuário
+        if (category === LayerBucketMap[LayerType.UI] || category === 'UILayer') {
+            console.warn("[EditorController] A camada de UI é reservada do sistema e não pode ser selecionada.");
+            return;
+        }
+
+        const map = this.getCurrentMap();
+        if (!map || !map[category] || !map[category][index]) {
+            console.error(`[EditorController] Camada inválida ou não encontrada em ${category}[${index}]`);
+            return;
+        }
+
+        // Salva a referência exata
         this.activeLayer = { category, index };
-        console.log(`[EditorController] Camada ativa alterada para: ${category}[${index}]`);
-        
+        this.currentActiveLayer = map[category][index];
+
+        console.log(`[EditorController] Camada ativa alterada para: ${category}[${index}] (${this.currentActiveLayer.name})`);
+    
         // Atualiza também no renderizador se ele existir
         if (this.mapRenderer) {
             this.mapRenderer.updateMapData(null, this.activeLayer);

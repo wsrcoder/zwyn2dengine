@@ -1,5 +1,5 @@
 
-import { LayerType } from '../Constants/LayerType.js';
+import { LayerType } from '../constants/LayerType.js';
 
 export class MapRenderer {
     constructor(canvas, mapWidth = 20, mapHeight = 15, tileSize = 32) {

@@ -1,4 +1,4 @@
-import { LayerType } from "../../Constants/LayerType.js";
+import { LayerType } from "../../constants/LayerType.js";
 import { LayerModel } from "./LayerModel.js";
 import { TilesetModel } from "./TilesetModel.js";
 
