@@ -4,11 +4,11 @@ import { TilesetModel } from "./TilesetModel.js";
 
 export class MapDataModel {
     constructor(rawJsonData) {
-        this.columns = rawJsonData.width;
-        this.rows = rawJsonData.height;
+        this.columns = rawJsonData.columns;
+        this.rows = rawJsonData.rows;
         this.tile = {
-            width: rawJsonData.tilewidth,
-            height: rawJsonData.tileheight
+            width: rawJsonData.tile.width,
+            height: rawJsonData.tile.height
         };
 
         this.orientation = rawJsonData.orientation || 'orthogonal';
@@ -26,26 +26,27 @@ export class MapDataModel {
             this.createLayer({ 
                 id: 0,
                 name: 'Background Layer 1', 
-                visible: true, 
-                opacity: 1, 
-                width: this.columns, 
-                height: this.rows, 
-                type: LayerType.BACKGROUND 
-            }, LayerType.BACKGROUND)
+                visible: rawJsonData.backgroundLayers.visible || true, 
+                opacity:  rawJsonData.backgroundLayers.opacity || 1, 
+                columns: rawJsonData.backgroundLayers.columns || this.columns, 
+                rows: rawJsonData.backgroundLayers.rows || this.rows, 
+                type: rawJsonData.backgroundLayers.type || LayerType.BACKGROUND,
+                data: rawJsonData.backgroundLayers.data || []
+            })
         ];
 
         // 2. Map Layers vindos do JSON do Tiled
-        const rawLayers = rawJsonData.layers;
         this.mapLayers = [
             this.createLayer({ 
                 id: 0,
                 name: 'Map Layer 1', 
-                visible: true, 
-                opacity: 1, 
-                width: this.columns, 
-                height: this.rows, 
-                type: LayerType.TILE 
-            }, LayerType.TILE)
+                visible: rawJsonData.mapLayers.visible || true, 
+                opacity:  rawJsonData.mapLayers.opacity || 1, 
+                columns: rawJsonData.mapLayers.columns || this.columns, 
+                rows: rawJsonData.mapLayers.rows || this.rows, 
+                type: rawJsonData.mapLayers.type || LayerType.TILE, 
+                data: rawJsonData.mapLayers.data || []
+            })
         ];
 
         // 3. Event Layer inicial garantido com dimensões padrão
@@ -53,13 +54,13 @@ export class MapDataModel {
             this.createLayer({ 
                 id: 0,
                 name: 'Event Layer 1', 
-                visible: true, 
-                opacity: 1, 
-                width: this.columns, 
-                height: this.rows, 
-                type: LayerType.EVENT, 
-                data: [] 
-            }, LayerType.EVENT)
+                visible: rawJsonData.eventLayers.visible || true, 
+                opacity:  rawJsonData.eventLayers.opacity || 1, 
+                columns: rawJsonData.eventLayers.columns || this.columns, 
+                rows: rawJsonData.eventLayers.rows || this.rows, 
+                type: rawJsonData.eventLayers.type || LayerType.EVENT, 
+                data: rawJsonData.eventLayers.data || []
+            })
         ];
         
         // 4. UI Layer inicial garantido
@@ -67,18 +68,18 @@ export class MapDataModel {
             this.createLayer({ 
                 id: 0, 
                 name: 'UI Layer 1', 
-                visible: true, 
-                opacity: 1, 
-                width: this.columns, 
-                height: this.rows, 
-                type: LayerType.UI, 
-                data: [] 
-            }, LayerType.UI)
+                visible: rawJsonData.UILayer.visible || true, 
+                opacity:  rawJsonData.UILayer.opacity || 1, 
+                columns: rawJsonData.UILayer.columns || this.columns, 
+                rows: rawJsonData.UILayer.rows || this.rows,
+                type: rawJsonData.UILayer.type || LayerType.UI, 
+                data: rawJsonData.UILayer.data || [] 
+            })
         ];
     }
 
-    createLayer(layerData, layerType) {
-        return new LayerModel(layerData, layerType);
+    createLayer(layerData) {
+        return new LayerModel(layerData);
     }
 
     createTilesetData(tilesetData) {
@@ -98,10 +99,12 @@ export class MapDataModel {
 
     toJSON() {
         return {
-            width: this.columns,
-            height: this.rows,
-            tilewidth: this.tile.width,
-            tileheight: this.tile.height,
+            columns: this.columns,
+            rows: this.rows,
+            tile:{
+                width: this.tile.width,
+                height: this.tile.height
+            },
             orientation: this.orientation,
             renderorder: this.renderOrder,
             

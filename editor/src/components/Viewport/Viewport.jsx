@@ -35,9 +35,7 @@ export default function Viewport({ mapDataModel, activeLayerIndex, showGrid, onT
             if (!tileset.name || tileset.name === 'unknow') return;
             const img = new Image();
             
-            // O caminho utiliza o nome do arquivo da imagem definido no model (ex: RiverForest001.png) com o seu caminho fixo original
-            img.src = `/templates/default-project/Assets/Tilesets/${tileset.name}.png`;
-            console.log("img src: " + img.src);
+
 
             img.onload = () => {
                 console.log(`Imagem do tileset [${tileset.name}] carregada com sucesso!`);

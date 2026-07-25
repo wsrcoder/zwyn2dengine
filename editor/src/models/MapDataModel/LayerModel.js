@@ -2,15 +2,15 @@
 import { LayerType } from "../../Constants/LayerType";
 export class LayerModel{
 
-    constructor(rawLayerData, layerType){
+    constructor(rawLayerData){
         this.id = rawLayerData.id;
         this.name = rawLayerData.name;
-        this.type = layerType; //tileLayer, imageLayer, eventLayer, uiLayer
+        this.type = rawLayerData.type; //tileLayer, imageLayer, eventLayer, uiLayer
         this.visible = rawLayerData.visible !== undefined ? rawLayerData.visible : true;
         this.opacity = rawLayerData.opacity !== undefined ? rawLayerData.opacity : 1.0;
         
-        this.columns = rawLayerData.width || 0;
-        this.rows = rawLayerData.height || 0;
+        this.columns = rawLayerData.columns || 0;
+        this.rows = rawLayerData.rows || 0;
         
         this.x = rawLayerData.x || 0;
         this.y = rawLayerData.y || 0;
@@ -53,8 +53,8 @@ export class LayerModel{
             opacity: this.opacity,
             visible: this.visible,
             // Ao exportar de volta para o Tiled, mapeamos de volta para a chave que ele espera ('width')
-            width: this.columns,
-            height: this.rows,
+            columns: this.columns,
+            rows: this.rows,
             x: this.x,
             y: this.y,
             data: [...this.data]

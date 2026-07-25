@@ -40,26 +40,31 @@ export class ProjectController {
         const mapInfo = this.mapsList[index];
         console.log(`[ProjectController] Carregando mapa [${index}]: ${mapInfo.name} em ${mapInfo.dirPath}`);
 
-        // O TiledLoader retorna o resultado da leitura
-        const result = await TiledLoader.loadTiledJsonMap(mapInfo.dirPath, mapInfo.name);
-        console.log("Resultado bruto do TiledLoader:", result);
+        try {
+            // Constrói o caminho completo do arquivo do mapa
+            const fullPath = `${mapInfo.dirPath}/${mapInfo.name}`;
 
-        // Se o seu TiledLoader retorna diretamente o objeto JSON parseado (ou se a estrutura muda),
-        // adaptamos a validação aqui:
-        const mapJsonData = result.data || result; // Garante que pega o JSON de um jeito ou de outro
+            
+            // Lê o arquivo do disco usando a API do Electron
+            const fileContent = await window.electronAPI.loadJsonFile(fullPath);
+            
+            if (!fileContent) {
+                console.error("[ProjectController] Erro ao ler arquivo do disco: Conteúdo vazio.");
+                return false;
+            }
+            console.log(fileContent.data);
 
-        if (!mapJsonData) {
-            console.error("[ProjectController] Erro ao ler arquivo do disco: Dados vazios ou inválidos.");
+            // Instancia o nosso MapDataModel com os dados limpos do nosso próprio formato
+            this.currentMapData = new MapDataModel(fileContent.data);
+            this.currentMapIndex = index;
+            this.isModified = false;
+
+            console.log("[ProjectController] MapDataModel instanciado com sucesso:", this.currentMapData);
+            return true;
+        } catch (error) {
+            console.error("[ProjectController] Erro ao carregar o mapa do disco:", error);
             return false;
         }
-
-        // Instancia o nosso MapDataModel com os dados corretos
-        this.currentMapData = new MapDataModel(mapJsonData);
-        this.currentMapIndex = index;
-        this.isModified = false;
-
-        console.log("[ProjectController] MapDataModel instanciado com sucesso:", this.currentMapData);
-        return true;
     }
 
     getCurrentMap() {
@@ -114,36 +119,69 @@ export class ProjectController {
 
         // 3. Cria o Map001.json inicial limpo usando o MapDataModel padrão
         const defaultRawMap = {
-            width: 20,
-            height: 15,
-            tilewidth: 32,
-            tileheight: 32,
+            columns: 20,
+            rows: 15,
+            tile:{
+                width: 32,
+                height: 32
+            } ,
             orientation: "orthogonal",
             renderorder: "right-down",
             tilesets: [
                 {
                     firstgid: 1,
                     name: "TLS0000001",
-                    image: "TLS0000001.png",
-                    imagewidth: 1024,   // Ajuste se souber a largura exata da imagem do tileset
-                    imageheight: 1024,  // Ajuste se souber a altura exata da imagem do tileset
-                    tilewidth: 32,
-                    tileheight: 32,
-                    spacing: 0,
-                    margin: 0
+                    columns: 32,
+                    rows: 32,
+                    image:{
+                        name: "TLS0000001.png",
+                        width: 1024,
+                        height: 1024
+                    } ,
+
+                    tile:{
+                        width: 32,
+                        height: 32,
+                        count: 1024
+                    },
+                    meta: {}
                 }
             ],
             backgroundLayers: [
-                { name: 'Background 1', visible: true, opacity: 1, width: 20, height: 15, data: new Array(20 * 15).fill(0) }
+                { id: 0,
+                    name: 'Background 1', 
+                    visible: true, 
+                    opacity: 1, 
+                    columns: 20, 
+                    rows: 15, 
+                    data: new Array(20 * 15).fill(0) }
             ],
             mapLayers: [
-                { name: 'Map Layer 1', visible: true, opacity: 1, width: 20, height: 15, data: new Array(20 * 15).fill(0) }
+                { id:0,
+                    name: 'Map Layer 1', 
+                    visible: true, 
+                    opacity: 1, 
+                    columns: 20, 
+                    rows: 15, 
+                    data: new Array(20 * 15).fill(0) }
             ],
             eventLayers: [
-                { name: 'Event Layer 1', visible: true, opacity: 1, width: 20, height: 15, data: [] }
+                { id:0,
+                    name: 'Event Layer 1', 
+                    visible: true, 
+                    opacity: 1, 
+                    columns: 20, 
+                    rows: 15, 
+                    data: new Array(20 * 15).fill(0) }
             ],
             UILayer: [
-                { name: 'UI Layer 1', visible: true, opacity: 1, width: 20, height: 15, data: [] }
+                { id:0,
+                    name: 'UI Layer 1', 
+                    visible: true, 
+                    opacity: 1, 
+                    columns: 20, 
+                    rows: 15, 
+                    data: new Array(20 * 15).fill(0) }
             ]
         };
     
@@ -156,10 +194,7 @@ export class ProjectController {
             mapJsonString
         );
 
-        // 4. Inicializa o projeto recém-criado no próprio controller para já deixá-lo ativo
-        await this.initProject(projectName, `${normalizedPath}/Data/Maps`, ["Map001.json"]);
-
-        console.log("[ProjectController] Projeto criado e inicializado com sucesso!");
+        console.log("[ProjectController] Projeto criado com sucesso!");
     }
 
     
