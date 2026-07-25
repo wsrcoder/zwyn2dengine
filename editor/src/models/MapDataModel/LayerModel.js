@@ -15,9 +15,16 @@ export class LayerModel{
         this.x = rawLayerData.x || 0;
         this.y = rawLayerData.y || 0;
         
-        this.data = rawLayerData.data ? [...rawLayerData.data] : []; // Copia os dados do array para evitar referência direta
-        this.properties = rawLayerData.properties ? {...rawLayerData.properties} : {}; // Copia as propriedades para evitar referência direta
-    };
+        // Se vierem dados válidos, usa eles; senão, preenche com zeros baseado em columns * rows
+        if (Array.isArray(rawLayerData.data) && rawLayerData.data.length > 0) {
+            this.data = [...rawLayerData.data];
+        } else {
+            const totalCells = this.columns * this.rows;
+            this.data = totalCells > 0 ? new Array(totalCells).fill(0) : [];
+        }
+
+        this.properties = rawLayerData.properties ? {...rawLayerData.properties} : {};
+    }
 
     getTileAt(x, y) {
         // Validação usando os novos nomes descritivos

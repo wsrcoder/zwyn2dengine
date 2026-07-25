@@ -7,6 +7,9 @@ export default function Viewport({ mapDataModel, activeLayerIndex, showGrid, onT
     const canvasRef = useRef(null);
     const mapRendererRef = useRef(null);
 
+    console.log("today:");
+    console.log(mapDataModel);
+
     // Inicializa o MapRenderer uma única vez na montagem do componente
     useEffect(() => {
         if (!canvasRef.current) return;
@@ -28,11 +31,13 @@ export default function Viewport({ mapDataModel, activeLayerIndex, showGrid, onT
 
         // Itera sobre os tilesets do mapa para carregar suas respectivas imagens
         mapDataModel.tilesets.forEach(tileset => {
+
+            if (!tileset.name || tileset.name === 'unknow') return;
             const img = new Image();
             
-            // O caminho utiliza o nome do arquivo da imagem definido no model (ex: RiverForest001.png)
+            // O caminho utiliza o nome do arquivo da imagem definido no model (ex: RiverForest001.png) com o seu caminho fixo original
             img.src = `/templates/default-project/Assets/Tilesets/${tileset.name}.png`;
-            console.log("img src: " + img);
+            console.log("img src: " + img.src);
 
             img.onload = () => {
                 console.log(`Imagem do tileset [${tileset.name}] carregada com sucesso!`);

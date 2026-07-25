@@ -23,25 +23,57 @@ export class MapDataModel {
 
         // 1. Background Layer inicial garantido
         this.backgroundLayers = [
-            this.createLayer({ name: 'Background 1', visible: true, opacity: 1, type: LayerType.BACKGROUND }, LayerType.BACKGROUND)
+            this.createLayer({ 
+                id: 0,
+                name: 'Background Layer 1', 
+                visible: true, 
+                opacity: 1, 
+                width: this.columns, 
+                height: this.rows, 
+                type: LayerType.BACKGROUND 
+            }, LayerType.BACKGROUND)
         ];
 
         // 2. Map Layers vindos do JSON do Tiled
         const rawLayers = rawJsonData.layers;
-        if (Array.isArray(rawLayers)) {
-            this.mapLayers = rawLayers.map(layerData => this.createLayer(layerData, LayerType.TILE));
-        } else {
-            this.mapLayers = [];
-        }
+        this.mapLayers = [
+            this.createLayer({ 
+                id: 0,
+                name: 'Map Layer 1', 
+                visible: true, 
+                opacity: 1, 
+                width: this.columns, 
+                height: this.rows, 
+                type: LayerType.TILE 
+            }, LayerType.TILE)
+        ];
 
-        // 3. Event Layer inicial garantido
+        // 3. Event Layer inicial garantido com dimensões padrão
         this.eventLayers = [
-            this.createLayer({ name: 'Event Layer 1', visible: true, opacity: 1, type: LayerType.EVENT, data: [] }, LayerType.EVENT)
+            this.createLayer({ 
+                id: 0,
+                name: 'Event Layer 1', 
+                visible: true, 
+                opacity: 1, 
+                width: this.columns, 
+                height: this.rows, 
+                type: LayerType.EVENT, 
+                data: [] 
+            }, LayerType.EVENT)
         ];
         
         // 4. UI Layer inicial garantido
         this.UILayer = [
-            this.createLayer({ name: 'UI Layer 1', visible: true, opacity: 1, type: LayerType.UI }, LayerType.UI)
+            this.createLayer({ 
+                id: 0, 
+                name: 'UI Layer 1', 
+                visible: true, 
+                opacity: 1, 
+                width: this.columns, 
+                height: this.rows, 
+                type: LayerType.UI, 
+                data: [] 
+            }, LayerType.UI)
         ];
     }
 
@@ -62,5 +94,24 @@ export class MapDataModel {
             ...this.UILayer
         ];
         return allLayers.find(layer => layer.name === name);
+    }
+
+    toJSON() {
+        return {
+            width: this.columns,
+            height: this.rows,
+            tilewidth: this.tile.width,
+            tileheight: this.tile.height,
+            orientation: this.orientation,
+            renderorder: this.renderOrder,
+            
+            tilesets: this.tilesets.map(ts => (ts.toJSON ? ts.toJSON() : { ...ts })),
+            
+            // Exporta todas as categorias de camadas para o arquivo JSON
+            backgroundLayers: this.backgroundLayers.map(l => (l.toJSON ? l.toJSON() : { ...l })),
+            mapLayers: this.mapLayers.map(l => (l.toJSON ? l.toJSON() : { ...l })),
+            eventLayers: this.eventLayers.map(l => (l.toJSON ? l.toJSON() : { ...l })),
+            UILayer: this.UILayer.map(l => (l.toJSON ? l.toJSON() : { ...l }))
+        };
     }
 }

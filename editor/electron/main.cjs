@@ -81,3 +81,64 @@ ipcMain.handle('project:create', async (event, projectPath) => {
         return { success: false, error: error.message };
     }
 });
+
+// Cria diretórios de forma recursiva (equivalente a mkdir -p)
+ipcMain.handle('create-directory', async (event, dirPath) => {
+    try {
+        fs.mkdirSync(dirPath, { recursive: true });
+        return { success: true };
+    } catch (error) {
+        console.error("[Electron] Erro ao criar diretório:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Salva arquivos de texto/JSON no disco
+ipcMain.handle('save-text-file', async (event, filePath, content) => {
+    try {
+        // Garante que o diretório pai existe antes de salvar
+        const dirname = path.dirname(filePath);
+        if (!fs.existsSync(dirname)) {
+            fs.mkdirSync(dirname, { recursive: true });
+        }
+
+        fs.writeFileSync(filePath, content, 'utf-8');
+        return { success: true };
+    } catch (error) {
+        console.error("[Electron] Erro ao salvar arquivo:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Copia um arquivo de uma origem para um destino
+ipcMain.handle('copy-file', async (event, sourcePath, destinationPath) => {
+    try {
+        // Garante que o diretório de destino existe antes de copiar
+        const dirname = path.dirname(destinationPath);
+        if (!fs.existsSync(dirname)) {
+            fs.mkdirSync(dirname, { recursive: true });
+        }
+
+        fs.copyFileSync(sourcePath, destinationPath);
+        return { success: true };
+    } catch (error) {
+        console.error("[Electron] Erro ao copiar arquivo:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('dir-exists', async (event, dirPath) => {
+    try {
+        return fs.existsSync(dirPath) && fs.lstatSync(dirPath).isDirectory();
+    } catch (error) {
+        return false;
+    }
+});
+
+ipcMain.handle('file-exists', async (event, filePath) => {
+    try {
+        return fs.existsSync(filePath) && fs.lstatSync(filePath).isFile();
+    } catch (error) {
+        return false;
+    }
+});

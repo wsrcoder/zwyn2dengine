@@ -47,6 +47,7 @@ export class MapRenderer {
     }
 
     updateMapData(mapData, activeLayer, showGrid = true) {
+
         if (mapData) {
             this.mapData = mapData;
             
@@ -130,6 +131,7 @@ export class MapRenderer {
                     const localTileId = gid - tileset.firstgid;
                     const img = this.tilesetImages[tileset.name];
                     
+                    //console.log("render:");
                     if (!img) return; 
 
                     const col = index % mapWidth;

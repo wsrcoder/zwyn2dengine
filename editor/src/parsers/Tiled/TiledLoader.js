@@ -8,6 +8,8 @@ export class TiledLoader {
     static async loadTiledJsonMap(dirPath, fileName) {
         try {
             const fullFilePath = `${dirPath}/${fileName}`.replace(/\\/g, '/');
+
+            console.log("fullpath:" + fullFilePath);
             
             // 1. Carrega o JSON principal do mapa
             const jsonResult = await window.electronAPI.loadTextFile(fullFilePath);
