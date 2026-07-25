@@ -6,37 +6,41 @@ import SidebarRight from './components/SidebarRight/SidebarRight.jsx';
 import StatusBar from './components/StatusBar';
 
 import { ProjectController } from './controllers/ProjectController.js';
+import { EditorController } from './controllers/EditorController.js';
 
 import './index.css';
 import './App.css';
 
 export default function App() {
+  // Instancia os controladores globais usando refs para persistirem durante o ciclo de vida
   const projectControllerRef = useRef(new ProjectController());
+  const editorControllerRef = useRef(new EditorController());
+  
   const projectController = projectControllerRef.current;
+  const editorController = editorControllerRef.current;
 
-  const [selectedTile, setSelectedTile] = useState({ x: 0, y: 0 });
+  // Estados locais para abas e componentes da UI que o React ainda precisa exibir
   const [activeTab, setActiveTab] = useState('tilesets');
-  const [activeLayerIndex, setActiveLayerIndex] = useState({ bucketId: 0, index: 0 });
   const [showGrid, setShowGrid] = useState(true);
 
-  // Estado que alimenta o MapRenderer na Viewport
+  // Estado que alimenta a Viewport com o modelo do mapa atual
   const [mapDataModel, setMapDataModel] = useState(null);
 
+  // Vincula o ProjectController ao EditorController na montagem inicial
+  useEffect(() => {
+    editorController.setProjectController(projectController);
+  }, [projectController, editorController]);
+
   const handleTestCreateProject = async () => {
-        const controller = new ProjectController();
-        
-        // Caminho de exemplo no disco onde o projeto será gerado
-        const targetPath = "D:/projects/2026/meu-novo-projeto- زwyn";
-        
-        try {
-            await controller.createNewProject(targetPath, "MeuProjetoZwyn");
-            console.log("Tudo pronto! O mapa e as pastas foram gerados e carregados.");
-            
-            // Aqui você pode atualizar o estado do React para guardar o controller ativo
-        } catch (error) {
-            console.error("Erro ao criar o novo projeto:", error);
-        }
-    };
+    const targetPath = "D:/projects/2026/meu-novo-projeto-zwyn";
+    
+    try {
+        await projectController.createNewProject(targetPath, "MeuProjetoZwyn");
+        console.log("Tudo pronto! O mapa e as pastas foram gerados e carregados.");
+    } catch (error) {
+        console.error("Erro ao criar o novo projeto:", error);
+    }
+  };
 
   useEffect(() => {
     async function initEditorSession() {
@@ -59,7 +63,7 @@ export default function App() {
         // Inicializa o projeto
         await projectController.initProject(projectName, mapsDir, initialMaps);
 
-        // Carrega o mapa na Viewport
+        // Carrega o mapa inicial e repassa para o estado do React
         const loadedMap = projectController.getCurrentMap();
         if (loadedMap) {
           setMapDataModel(loadedMap);
@@ -75,34 +79,35 @@ export default function App() {
   return (
     <div className="app-container">
       <TopMenu />
+      
       {/* Botão temporário para testar a criação do projeto */}
-            <div style={{ padding: '10px' }}>
-                <button onClick={handleTestCreateProject}>
-                    Criar Novo Projeto de Teste
-                </button>
-            </div>
+      <div style={{ padding: '10px' }}>
+          <button onClick={handleTestCreateProject}>
+              Criar Novo Projeto de Teste
+          </button>
+      </div>
 
       <div className="main-content">
         <SidebarLeft className="sidebar-left" />
         
+        {/* Viewport agora recebe o editorController injetado */}
         <Viewport 
           className="viewport-container" 
+          editorController={editorController}
           mapDataModel={mapDataModel}
-          activeLayerIndex={activeLayerIndex}
-          showGrid={showGrid}
         />
 
         <SidebarRight 
           className="sidebar-right"
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          selectedTile={selectedTile}
+          selectedTile={editorController.selectedTile}
         />
       </div>
 
       <StatusBar 
         className="status-bar"
-        selectedTile={selectedTile} 
+        selectedTile={editorController.selectedTile} 
       />
     </div>
   );

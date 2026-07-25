@@ -21,65 +21,42 @@ export class MapDataModel {
             this.tilesets = [];
         }
 
-        // 1. Background Layer inicial garantido
-        this.backgroundLayers = [
-            this.createLayer({ 
-                id: 0,
-                name: 'Background Layer 1', 
-                visible: rawJsonData.backgroundLayers.visible || true, 
-                opacity:  rawJsonData.backgroundLayers.opacity || 1, 
-                columns: rawJsonData.backgroundLayers.columns || this.columns, 
-                rows: rawJsonData.backgroundLayers.rows || this.rows, 
-                type: rawJsonData.backgroundLayers.type || LayerType.BACKGROUND,
-                data: rawJsonData.backgroundLayers.data || []
-            })
-        ];
+        // 1. Background Layer
+        this.backgroundLayers = (rawJsonData.backgroundLayers || []).map((layerData, index) => 
+            this.createLayer(layerData, LayerType.BACKGROUND, 'Background Layer', index)
+        );
 
-        // 2. Map Layers vindos do JSON do Tiled
-        this.mapLayers = [
-            this.createLayer({ 
-                id: 0,
-                name: 'Map Layer 1', 
-                visible: rawJsonData.mapLayers.visible || true, 
-                opacity:  rawJsonData.mapLayers.opacity || 1, 
-                columns: rawJsonData.mapLayers.columns || this.columns, 
-                rows: rawJsonData.mapLayers.rows || this.rows, 
-                type: rawJsonData.mapLayers.type || LayerType.TILE, 
-                data: rawJsonData.mapLayers.data || []
-            })
-        ];
+        // 2. Map Layers
+        this.mapLayers = (rawJsonData.mapLayers || []).map((layerData, index) => 
+            this.createLayer(layerData, LayerType.TILE, 'Map Layer', index)
+        );
 
-        // 3. Event Layer inicial garantido com dimensões padrão
-        this.eventLayers = [
-            this.createLayer({ 
-                id: 0,
-                name: 'Event Layer 1', 
-                visible: rawJsonData.eventLayers.visible || true, 
-                opacity:  rawJsonData.eventLayers.opacity || 1, 
-                columns: rawJsonData.eventLayers.columns || this.columns, 
-                rows: rawJsonData.eventLayers.rows || this.rows, 
-                type: rawJsonData.eventLayers.type || LayerType.EVENT, 
-                data: rawJsonData.eventLayers.data || []
-            })
-        ];
+        // 3. Event Layer
+        this.eventLayers = (rawJsonData.eventLayers || []).map((layerData, index) => 
+            this.createLayer(layerData, LayerType.EVENT, 'Event Layer', index)
+        );
         
-        // 4. UI Layer inicial garantido
-        this.UILayer = [
-            this.createLayer({ 
-                id: 0, 
-                name: 'UI Layer 1', 
-                visible: rawJsonData.UILayer.visible || true, 
-                opacity:  rawJsonData.UILayer.opacity || 1, 
-                columns: rawJsonData.UILayer.columns || this.columns, 
-                rows: rawJsonData.UILayer.rows || this.rows,
-                type: rawJsonData.UILayer.type || LayerType.UI, 
-                data: rawJsonData.UILayer.data || [] 
-            })
-        ];
+        // 4. UI Layer
+        this.UILayer = (rawJsonData.UILayer || []).map((layerData, index) => 
+            this.createLayer(layerData, LayerType.UI, 'UI Layer', index)
+        );
     }
 
-    createLayer(layerData) {
-        return new LayerModel(layerData);
+    createLayer(layerData = {}, defaultType = LayerType.TILE, defaultNamePrefix = 'Layer', index = 0) {
+        const layerNum = index + 1;
+        
+        const normalizedData = {
+            id: layerData.id !== undefined ? layerData.id : index,
+            name: layerData.name || `${defaultNamePrefix} ${layerNum}`,
+            visible: layerData.visible ?? true,
+            opacity: layerData.opacity ?? 1,
+            columns: layerData.columns || this.columns,
+            rows: layerData.rows || this.rows,
+            type: layerData.type || defaultType,
+            data: layerData.data || new Array(this.columns * this.rows).fill(0)
+        };
+
+        return new LayerModel(normalizedData);
     }
 
     createTilesetData(tilesetData) {

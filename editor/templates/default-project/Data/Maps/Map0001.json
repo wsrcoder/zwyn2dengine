@@ -29,7 +29,7 @@
   "backgroundLayers": [
     {
       "id": 0,
-      "name": "Background Layer 1",
+      "name": "Background 1",
       "type": "background",
       "opacity": 1,
       "visible": true,

@@ -1,75 +1,87 @@
 import React, { useEffect, useRef } from 'react';
 import { MapRenderer } from '../../renderers/MapRenderer';
+import './Viewport.css';
 
-import './viewport.css';
-
-export default function Viewport({ mapDataModel, activeLayerIndex, showGrid, onTileClick }) {
+export default function Viewport({ editorController, mapDataModel }) {
     const canvasRef = useRef(null);
     const mapRendererRef = useRef(null);
+    const tilesetImagesRef = useRef({}); // Cache para evitar recarregar imagens toda vez
 
-    console.log("today:");
-    console.log(mapDataModel);
-
-    // Inicializa o MapRenderer uma única vez na montagem do componente
+    // 1. Inicializa o MapRenderer e vincula ao Controller uma única vez
     useEffect(() => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current || !editorController) return;
 
         const columns = mapDataModel?.columns || 20;
         const rows = mapDataModel?.rows || 15;
         const tileWidth = mapDataModel?.tile?.width || 32;
 
-        mapRendererRef.current = new MapRenderer(canvasRef.current, columns, rows, tileWidth);
-    }, []);
+        const renderer = new MapRenderer(canvasRef.current, columns, rows, tileWidth);
+        mapRendererRef.current = renderer;
+        editorController.setMapRenderer(renderer);
 
-    // Cuida de carregar a imagem do tileset, atualizar os dados e renderizar sempre que o mapa ou as propriedades mudarem
+        // Inscreve-se para escutar atualizações do mapa vindas do controller
+        const unsubscribe = editorController.subscribe('mapUpdated', (updatedMap) => {
+            if (mapRendererRef.current) {
+                mapRendererRef.current.updateMapData(updatedMap);
+                mapRendererRef.current.render();
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [editorController]);
+
+    // 2. Gerencia o carregamento das imagens dos tilesets (Apenas quando o mapa/tilesets mudam de fato)
     useEffect(() => {
-        if (!mapRendererRef.current || !canvasRef.current) return;
-        if (!mapDataModel || !mapDataModel.tilesets || mapDataModel.tilesets.length === 0) return;
+        if (!mapRendererRef.current || !mapDataModel) return;
 
-        // Atualiza os dados e configurações iniciais no renderer
-        mapRendererRef.current.updateMapData(mapDataModel, activeLayerIndex, showGrid);
+        const activeLayer = editorController ? editorController.activeLayer : { category: 'mapLayers', index: 0 };
+        mapRendererRef.current.updateMapData(mapDataModel, activeLayer, true);
 
-        // Itera sobre os tilesets do mapa para carregar suas respectivas imagens
+        if (!mapDataModel.tilesets || mapDataModel.tilesets.length === 0) {
+            mapRendererRef.current.render();
+            return;
+        }
+
         mapDataModel.tilesets.forEach(tileset => {
-
             if (!tileset.name || tileset.name === 'unknow') return;
-            const img = new Image();
-            
 
+            // Se a imagem já foi carregada antes, reaproveita do cache
+            if (tilesetImagesRef.current[tileset.name]) {
+                mapRendererRef.current.setTilesetImage(tileset.name, tilesetImagesRef.current[tileset.name]);
+                mapRendererRef.current.render();
+                return;
+            }
+
+            const img = new Image();
+            img.src = `../../Assets/Tilesets/${tileset.image?.name || tileset.name}`;
 
             img.onload = () => {
-                console.log(`Imagem do tileset [${tileset.name}] carregada com sucesso!`);
-                
-                // Injeta a imagem carregada no MapRenderer usando o nome do tileset
+                console.log(`[Viewport] Tileset [${tileset.name}] carregado com sucesso.`);
+                tilesetImagesRef.current[tileset.name] = img; // Guarda no cache
                 mapRendererRef.current.setTilesetImage(tileset.name, img);
-                
-                // Manda renderizar novamente após a imagem estar pronta
                 mapRendererRef.current.render();
             };
 
             img.onerror = (err) => {
-                console.error(`Erro ao carregar a imagem do tileset [${tileset.name}]:`, err);
+                console.error(`[Viewport] Erro ao carregar tileset [${tileset.name}]:`, err);
             };
         });
 
-        // Renderiza imediatamente (caso a imagem já estivesse em cache ou para desenhar o grid/camadas vazias)
         mapRendererRef.current.render();
 
-    }, [mapDataModel, activeLayerIndex, showGrid]);
+    }, [mapDataModel]); // Depende apenas do mapDataModel estrutural, evitando recargas desnecessárias
 
+    // 3. Tratamento de cliques e pintura
     const handleCanvasClick = (event) => {
-        if (!mapRendererRef.current) return;
+        if (!mapRendererRef.current || !editorController) return;
 
         const clickData = mapRendererRef.current.handleClickEvent(event);
 
-        if (clickData.isOutOfBounds) {
-            console.log("Click outside the map bounds.");
-            return;
-        }
+        if (clickData.isOutOfBounds) return;
 
-        if (onTileClick) {
-            onTileClick(clickData);
-        }
+        editorController.paintTile(clickData.tileX, clickData.tileY);
     };
 
     return (
@@ -77,6 +89,7 @@ export default function Viewport({ mapDataModel, activeLayerIndex, showGrid, onT
             <canvas
                 ref={canvasRef}
                 onClick={handleCanvasClick}
+                style={{ display: 'block', cursor: 'crosshair' }}
             />
         </div>
     );
