@@ -45,9 +45,7 @@ export default function App() {
   useEffect(() => {
     async function initEditorSession() {
       const templatePath = "D:/projects/2026/zwyn2dengine/Editor/templates/default-project";
-      const mapsDir = `${templatePath}/Data/Maps`;
       const projectName = "Default Project";
-      const initialMaps = ["Map0001.json"];
 
       try {
         // Verifica se o diretório do template já existe
@@ -57,14 +55,16 @@ export default function App() {
           console.log("[App] Template não encontrado. Criando novo projeto padrão...");
           await projectController.createNewProject(templatePath, projectName);
         } else {
-          console.log("[App] Template já existe. Pulando criação.");
-        }
+          console.log("[App] Template já existe. Abrindo projeto existente...");
+          // Abre o projeto existente lendo o project.json e carregando a mapsList
+          await projectController.openProject(templatePath);
 
-        // Inicializa o projeto
-        await projectController.initProject(projectName, mapsDir, initialMaps);
+        }
 
         // Carrega o mapa inicial e repassa para o estado do React
         const loadedMap = projectController.getCurrentMap();
+
+ 
         if (loadedMap) {
           setMapDataModel(loadedMap);
         }
@@ -88,7 +88,21 @@ export default function App() {
       </div>
 
       <div className="main-content">
-        <SidebarLeft className="sidebar-left" />
+        <SidebarLeft 
+          className="sidebar-left" 
+          projectController={projectController}
+          editorController={editorController}
+          mapDataModel={mapDataModel}
+          onMapChange={(index) => {
+            // Exemplo de comportamento caso ela precise recarregar o mapa ao selecionar na lista
+            projectController.loadMapByIndex(index).then(() => {
+              const updatedMap = projectController.getCurrentMap();
+              if (updatedMap) {
+                setMapDataModel(Object.assign(new MapDataModel(), updatedMap));
+              }
+            });
+          }}
+        />
         
         {/* Viewport agora recebe o editorController injetado */}
         <Viewport 

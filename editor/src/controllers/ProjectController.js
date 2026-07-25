@@ -1,4 +1,3 @@
-
 import { TiledLoader } from '../parsers/Tiled/TiledLoader.js';
 import { MapDataModel } from '../models/MapDataModel/MapDataModel.js';
 import { ImageUtils } from '../utils/ImageUtils.js';
@@ -16,7 +15,6 @@ export class ProjectController {
     }
 
     async initProject(projectName, projectPath, mapFileNames = []) {
-        // Padroniza as barras para evitar conflito do Windows com o Electron
         this.projectPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
         this.projectName = projectName;
         
@@ -25,6 +23,51 @@ export class ProjectController {
             name: fileName,
             dirPath: this.projectPath
         }));
+
+        if (this.mapsList.length > 0) {
+            await this.loadMapByIndex(0);
+        }
+    }
+
+    async openProject(projectPath) {
+        this.projectPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
+        
+        const jsonFilePath = `${this.projectPath}/project.json`;
+        console.log("[ProjectController] Tentando ler o arquivo em:", jsonFilePath);
+
+        const response = await window.electronAPI.loadJsonFile(jsonFilePath);
+        console.log("[ProjectController] Resposta bruta da API:", response);
+
+        // Extrai o objeto de configuração independentemente de vir puro ou encapsulado em .data / .content
+        let projectConfig = null;
+        if (response) {
+            if (response.data) {
+                projectConfig = response.data;
+            } else if (response.content) {
+                projectConfig = typeof response.content === 'string' ? JSON.parse(response.content) : response.content;
+            } else {
+                projectConfig = response; // Caso venha direto o objeto JSON
+            }
+        }
+
+        console.log("[ProjectController] projectConfig processado:", projectConfig);
+
+        if (projectConfig && typeof projectConfig === 'object') {
+            this.projectName = projectConfig.projectName || "Unnamed Project";
+
+            if (Array.isArray(projectConfig.maps)) {
+                this.mapsList = projectConfig.maps.map(mapItem => ({
+                    id: mapItem.id,
+                    name: mapItem.name, 
+                    dirPath: `${this.projectPath}/Data/Maps`
+                }));
+                console.log("[ProjectController] mapsList populada com sucesso:", this.mapsList);
+            } else {
+                console.warn("[ProjectController] O arquivo project.json não possui um array de 'maps' válido.");
+            }
+        } else {
+            console.error("[ProjectController] Falha crítica: projectConfig é inválido ou nulo.");
+        }
 
         if (this.mapsList.length > 0) {
             await this.loadMapByIndex(0);
@@ -41,21 +84,21 @@ export class ProjectController {
         console.log(`[ProjectController] Carregando mapa [${index}]: ${mapInfo.name} em ${mapInfo.dirPath}`);
 
         try {
-            // Constrói o caminho completo do arquivo do mapa
             const fullPath = `${mapInfo.dirPath}/${mapInfo.name}`;
-
-            
-            // Lê o arquivo do disco usando a API do Electron
             const fileContent = await window.electronAPI.loadJsonFile(fullPath);
             
+            
+
             if (!fileContent) {
                 console.error("[ProjectController] Erro ao ler arquivo do disco: Conteúdo vazio.");
                 return false;
             }
-            console.log(fileContent.data);
 
-            // Instancia o nosso MapDataModel com os dados limpos do nosso próprio formato
-            this.currentMapData = new MapDataModel(fileContent.data);
+            // Suporta tanto formato direto quanto encapsulado em .data
+            const rawData = fileContent.data ? fileContent.data : fileContent;
+  
+
+            this.currentMapData = new MapDataModel(rawData);
             this.currentMapIndex = index;
             this.isModified = false;
 
@@ -71,22 +114,17 @@ export class ProjectController {
         return this.currentMapData;
     }
 
-    async createNewProject(projectRootPath, projectName){
+    async createNewProject(projectRootPath, projectName) {
         const normalizedPath = projectRootPath.replace(/\\/g, '/');
 
-        // 1. Cria a estrutura de pastas física
         await window.electronAPI.createDirectory(`${normalizedPath}/Data/Maps`);
         await window.electronAPI.createDirectory(`${normalizedPath}/Assets/Tilesets`);
 
-
-        // 1.1 Lista de tilesets padrão para copiar na inicialização do projeto
         const defaultTilesets = [
             {
                 fileName: 'TLS0000001.png',
                 sourcePath: './Assets/Tilesets/TLS0000001.png'
             }
-            // Quando precisar de mais, basta adicionar novos objetos aqui:
-            // { fileName: 'TLS0000002.png', sourcePath: './Assets/Tilesets/TLS0000002.png' }
         ];
 
         try {
@@ -103,29 +141,25 @@ export class ProjectController {
             console.warn("[ProjectController] Não foi possível copiar os tilesets padrão automaticamente:", error.message);
         }
 
-        // 2. Cria o arquivo de configuração do projeto (project.json)
         const projectConfig = {
-                projectName: projectName,
-                version: "1.0",
-                maps: [
-                        { id: "map_0001", name: "Map0001.json" }
-                    ]
-                };
+            projectName: projectName,
+            version: "1.0",
+            maps: [
+                { id: "map_0001", name: "Map0001.json" }
+            ]
+        };
         
         await window.electronAPI.saveTextFile(
             `${normalizedPath}/project.json`, 
             JSON.stringify(projectConfig, null, 2)
         );
 
-        // 3. Cria o Map001.json inicial limpo usando o MapDataModel padrão
         const defaultRawMap = {
-            name: "Map0001",
+            id: "map_0001",
+            name: "Map0001.json",
             columns: 20,
             rows: 15,
-            tile:{
-                width: 32,
-                height: 32
-            } ,
+            tile: { width: 32, height: 32 },
             orientation: "orthogonal",
             renderorder: "right-down",
             tilesets: [
@@ -134,59 +168,17 @@ export class ProjectController {
                     name: "TLS0000001",
                     columns: 32,
                     rows: 32,
-                    image:{
-                        name: "TLS0000001.png",
-                        width: 1024,
-                        height: 1024
-                    } ,
-
-                    tile:{
-                        width: 32,
-                        height: 32,
-                        count: 1024
-                    },
+                    image: { name: "TLS0000001.png", width: 1024, height: 1024 },
+                    tile: { width: 32, height: 32, count: 1024 },
                     meta: {}
                 }
             ],
-            backgroundLayers: [
-                { id: 0,
-                    name: 'Background 1', 
-                    visible: true, 
-                    opacity: 1, 
-                    columns: 20, 
-                    rows: 15, 
-                    data: new Array(20 * 15).fill(0) }
-            ],
-            mapLayers: [
-                { id:0,
-                    name: 'Map Layer 1', 
-                    visible: true, 
-                    opacity: 1, 
-                    columns: 20, 
-                    rows: 15, 
-                    data: new Array(20 * 15).fill(0) }
-            ],
-            eventLayers: [
-                { id:0,
-                    name: 'Event Layer 1', 
-                    visible: true, 
-                    opacity: 1, 
-                    columns: 20, 
-                    rows: 15, 
-                    data: new Array(20 * 15).fill(0) }
-            ],
-            UILayer: [
-                { id:0,
-                    name: 'UI Layer 1', 
-                    visible: true, 
-                    opacity: 1, 
-                    columns: 20, 
-                    rows: 15, 
-                    data: new Array(20 * 15).fill(0) }
-            ]
+            backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+            mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+            eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+            UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }]
         };
     
-        // Instancia o model e serializa para garantir o formato correto da engine
         const initialMapModel = new MapDataModel(defaultRawMap);
         const mapJsonString = JsonUtils.stringifyWithCompactArrays(initialMapModel.toJSON());
 
@@ -196,7 +188,8 @@ export class ProjectController {
         );
 
         console.log("[ProjectController] Projeto criado com sucesso!");
-    }
 
-    
+        // Garante que o projeto recém-criado já carregue as configurações e o mapa inicial
+        await this.openProject(normalizedPath);
+    }
 }

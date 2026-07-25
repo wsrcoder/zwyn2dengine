@@ -1,5 +1,6 @@
 {
-  "name": "Map0001",
+  "id": "map_0001",
+  "name": "Map0001.json",
   "columns": 20,
   "rows": 15,
   "tile": {
