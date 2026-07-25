@@ -3,7 +3,7 @@ import { LayerType } from '../../Constants/LayerType.js';
 import { LayerBucketMap } from '../../Constants/LayerBucketMap.js';
 import './SidebarLeft.css';
 
-export default function SidebarLeft({ projectController, editorController, currentMap, onSelectMap }) {
+export default function SidebarLeft({ projectController, editorController, onSelectMap }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
     const [expandedLayers, setExpandedLayers] = useState(true);
 
@@ -23,7 +23,7 @@ export default function SidebarLeft({ projectController, editorController, curre
                 </div>
 
                 {console.log("hello world")}
-                {console.log(mapsList)}
+                {console.log(projectController.currentMapData)}
                 {expandedMaps && (
                     
                     <div className="sidebar-content">
@@ -37,8 +37,10 @@ export default function SidebarLeft({ projectController, editorController, curre
                                 const fileName = mapItem.name || mapItem;
                                 const displayName = fileName.replace('.json', ''); // Fica "Map0001" para exibição
                                 
+                                console.log("map name: " + projectController.currentMapData.name);
+                                console.log("display name:" + displayName);
                                 // Compara o nome limpo do arquivo com a propriedade name do currentMapData em memória
-                                const isSelected = currentMap?.name === displayName;
+                                const isSelected = projectController.currentMapData?.name === displayName;
 
                                 return (
                                     <li 
@@ -46,8 +48,8 @@ export default function SidebarLeft({ projectController, editorController, curre
                                         className={`sidebar-item ${isSelected ? 'active' : ''}`}
                                         onClick={() => {
                                             console.log("[SidebarLeft] Clicou no mapa:", fileName);
-                                            if (onMapSelect) {
-                                                onMapSelect(fileName); // Envia "Map0001.json" para o load
+                                            if (onSelectMap) {
+                                                onSelectMap(fileName); // Envia "Map0001.json" para o load
                                             }
                                         }}
                                     >
@@ -62,7 +64,7 @@ export default function SidebarLeft({ projectController, editorController, curre
 
             {/* --- SEÇÃO 2: HIERARQUIA DE CAMADAS (LAYERS) DO MAPA ATUAL --- */}
         
-            {currentMap && (
+            {projectController.currentMapData && (
                 <div className="sidebar-section">
                     <div 
                         className="sidebar-header"
@@ -78,7 +80,7 @@ export default function SidebarLeft({ projectController, editorController, curre
                             {/* Bucket: Map Layers (Tile) */}
                             <div className="layer-category-group">
                                 <div className="category-title">Camadas de Tiles</div>
-                                {currentMap.mapLayers?.map((layer, index) => (
+                                {projectController.currentMapData.mapLayers?.map((layer, index) => (
                                     <div 
                                         key={`map-${index}`}
                                         className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.TILE] && activeLayer.index === index ? 'selected' : ''}`}
@@ -93,7 +95,7 @@ export default function SidebarLeft({ projectController, editorController, curre
                             {/* Bucket: Background Layers */}
                             <div className="layer-category-group">
                                 <div className="category-title">Camadas de Fundo</div>
-                                {currentMap.backgroundLayers?.map((layer, index) => (
+                                {projectController.currentMapData.backgroundLayers?.map((layer, index) => (
                                     <div 
                                         key={`bg-${index}`}
                                         className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.BACKGROUND] && activeLayer.index === index ? 'selected' : ''}`}
@@ -108,7 +110,7 @@ export default function SidebarLeft({ projectController, editorController, curre
                             {/* Bucket: Event Layers */}
                             <div className="layer-category-group">
                                 <div className="category-title">Camadas de Eventos</div>
-                                {currentMap.eventLayers?.map((layer, index) => (
+                                {projectController.currentMapData.eventLayers?.map((layer, index) => (
                                     <div 
                                         key={`evt-${index}`}
                                         className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.EVENT] && activeLayer.index === index ? 'selected' : ''}`}

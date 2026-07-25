@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
     createProject: (path) => ipcRenderer.invoke('project:create', path),
     loadJsonFile: (filePath) => ipcRenderer.invoke('project:load-json-file', filePath),
+    saveJsonFile: (filePath, dataObject) => ipcRenderer.invoke('project:save-json-file', filePath, dataObject),
     loadTextFile: (filePath) => ipcRenderer.invoke('project:load-file', filePath),
     createDirectory: (dirPath) => ipcRenderer.invoke('create-directory', dirPath),
     saveTextFile: (filePath, content) => ipcRenderer.invoke('save-text-file', filePath, content),

@@ -54,6 +54,22 @@ ipcMain.handle('project:load-json-file', async (event, absoluteFilePath) => {
     }
 });
 
+// Escuta o comando do front-end para salvar um arquivo JSON no disco
+ipcMain.handle('project:save-json-file', async (event, absoluteFilePath, dataObject) => {
+    try {
+        // Serializa o objeto para JSON formatado com 2 espaços de indentação
+        const jsonString = JSON.stringify(dataObject, null, 2);
+        
+        // Salva o arquivo usando o módulo 'fs'
+        fs.writeFileSync(absoluteFilePath, jsonString, 'utf-8');
+        
+        return { success: true };
+    } catch (error) {
+        console.error("[Electron] Erro ao salvar arquivo JSON:", error);
+        return { success: false, error: error.message };
+    }
+});
+
 // Escuta o comando do front-end para ler um arquivo XML de qualquer lugar do disco
 ipcMain.handle('project:load-file', async (event, absoluteFilePath) => {
     try {

@@ -141,7 +141,7 @@ export class ProjectController {
             console.warn("[ProjectController] Não foi possível copiar os tilesets padrão automaticamente:", error.message);
         }
 
-        const projectConfig = {
+        const projectInfo = {
             projectName: projectName,
             version: "1.0",
             maps: [
@@ -149,10 +149,7 @@ export class ProjectController {
             ]
         };
         
-        await window.electronAPI.saveTextFile(
-            `${normalizedPath}/project.json`, 
-            JSON.stringify(projectConfig, null, 2)
-        );
+        await window.electronAPI.saveJsonFile(`${normalizedPath}/project.json`, projectInfo);
 
         const defaultRawMap = {
             id: "map_0001",
@@ -192,4 +189,90 @@ export class ProjectController {
         // Garante que o projeto recém-criado já carregue as configurações e o mapa inicial
         await this.openProject(normalizedPath);
     }
+
+    //adiciona um novo mapa a lista do projeto
+    async addToMapsList(mapId, mapName){
+        if(!this.projectPath){
+            throw new Error("Nenhum projeto aberto para adicionar mapas.");
+        }
+
+        const exists = this.mapsList.some(m => m.id === mapId || m.name === mapName);
+
+        if(exists){
+            console.warn(`[ProjectController] O mapa ${mapName} (${mapId}) já existe na lista.`);
+            return false;
+        }
+
+        const newMapItem = {
+            id: mapId,
+            name: mapName,
+            dirPath: `${this.projectPath}/Data/Maps`
+        };
+
+        this.mapsList.push(newMapItem);
+        console.log(`[ProjectController] Mapa ${mapName} adicionado à lista.`);
+
+        await this.saveProjectInfo();
+        return true;
+    }
+
+    async saveProjectInfo(){
+        if(!this.projectPath){
+            console.error(`[ProjectController] Impossivel salvar: Nenhum projectPath definido.`);
+            return;
+        }
+
+        const jsonFilePath = `${this.projectPath}/project.json`;
+
+        const projectInfo = {
+            projectName: this.projectName,
+            maps: this.mapsList.map(mapItem => ({
+                id: mapItem.id,
+                name: mapItem.name
+            }))
+        }
+
+        try{
+            //
+            await window.electronAPI.saveJsonFile(jsonFilePath, projectInfo);
+            console.log(`[ProjectController] project.json salvo com sucesso.`)
+        }catch(error){
+            console.log(`[ProjectController] Erro ao salvar o projeto`, error);
+            throw error;
+        }
+    }
+
+    async removeFromMapsList(mapId){
+        const index = this.mapsList.findIndex(m => m.id === mapId);
+
+        if(index === -1){
+            console.warn(`[ProjectController] Mapa com ID ${mapId} não encontrado para remoção.`)
+            return;
+        }
+
+        const removed = this.mapsList.splice(index, 1);
+        console.log(`[ProjectController] Mapa removido:`, removed);
+
+        await this.saveProjectInfo();
+        return true;
+
+    }
+
+    async updateMapInfo(mapId, newName) {
+        const mapItem = this.mapsList.find(m => m.id === mapId); // Corrigido para 'this.mapsList' e removido o 'await' desnecessário
+
+        if (!mapItem) {
+            throw new Error(`Mapa com ID ${mapId} não encontrado.`); // Corrigido para crases (``)
+        }
+
+        if (newName) {
+            mapItem.name = newName;
+        }
+
+        console.log(`[ProjectController] Informações do mapa ${mapId} atualizadas.`);
+        await this.saveProjectInfo();
+        return true;
+    }
+
+
 }
