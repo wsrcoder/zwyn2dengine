@@ -119,6 +119,7 @@ export class ProjectController {
 
         // 3. Cria o Map001.json inicial limpo usando o MapDataModel padrão
         const defaultRawMap = {
+            name: "Map0001",
             columns: 20,
             rows: 15,
             tile:{
