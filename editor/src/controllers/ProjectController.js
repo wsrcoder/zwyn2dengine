@@ -12,6 +12,7 @@ export class ProjectController {
         this.mapsList = []; 
         this.currentMapIndex = 0;
         this.currentMapData = null; // Instância do MapDataModel
+
     }
 
     async initProject(projectName, projectPath, mapFileNames = []) {
@@ -272,6 +273,76 @@ export class ProjectController {
         console.log(`[ProjectController] Informações do mapa ${mapId} atualizadas.`);
         await this.saveProjectInfo();
         return true;
+    }
+
+    async createNewMap(){
+
+        try{
+
+            //descobrir o proximo número sequencial baseado na lista atual de mapas
+            const mapsList = this.mapsList || [];
+
+            let nextIdNumber = 1;
+
+            if(mapsList.length > 0){
+                //Extrai números dos nomes existentes (ex: "Map0001" => 1)
+                const numbers = mapsList.map(m => {
+                    const name = typeof m === 'string' ? m: (m.name || '');
+                    const match = name.match(/\d+/);
+                    return match ? parseInt(match[0], 10): 0;
+                });
+
+                nextIdNumber = Math.max(...numbers) + 1;
+            }
+
+            //Formata com zeros a esquerda(ex: 2 vira "Map0002")
+            const mapId = `Map${String(nextIdNumber).padStart(4,'0')}`;
+            const fileName = `${mapId}.json`;
+
+            //Montar a estrutura Json padrão do novo mapa
+            const defaultRawMap = {
+                id: mapId,
+                name: mapId,
+                columns: 20,
+                rows: 15,
+                tile: { width: 32, height: 32 },
+                orientation: "orthogonal",
+                renderorder: "right-down",
+                tilesets: [
+                    {
+                        firstgid: 1,
+                        name: "TLS0000001",
+                        columns: 32,
+                        rows: 32,
+                        image: { name: "TLS0000001.png", width: 1024, height: 1024 },
+                        tile: { width: 32, height: 32, count: 1024 },
+                        meta: {}
+                    }
+                ],
+                backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+                mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+                eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+                UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }]
+            };
+
+            const newMapData = new MapDataModel(defaultRawMap);
+            const mapJsonString = JsonUtils.stringifyWithCompactArrays(newMapData.toJSON());
+
+            await window.electronAPI.saveTextFile(`${this.projectPath}/Data/Maps/${fileName}`, mapJsonString);
+
+            // Adiciona à lista local do controller
+            this.addToMapsList(mapId, fileName);
+
+            //Atualizar o project.json
+            this.saveProjectInfo();
+
+            console.log("[ProjectController] Projeto criado com sucesso!");
+
+            return newMapData;
+        }catch(error){
+            console.error("[ProjectController] Erro ao criar novo mapa:", error);
+            return null;
+        }
     }
 
 

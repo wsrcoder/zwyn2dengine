@@ -1,10 +1,17 @@
 {
   "projectName": "Default Project",
-  "version": "1.0",
   "maps": [
     {
       "id": "map_0001",
       "name": "Map0001.json"
+    },
+    {
+      "id": "Map0002",
+      "name": "Map0002.json"
+    },
+    {
+      "id": "Map0003",
+      "name": "Map0003.json"
     }
   ]
 }

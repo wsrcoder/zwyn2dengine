@@ -35,7 +35,12 @@ export default function MapsTab({ projectController, onSelectMap }) {
 
                 {expandedMaps && (
                     <div className="sidebar-content">
-                        <button className="sidebar-btn-action" onClick={() => console.log("Criar novo mapa")}>
+                        <button className="sidebar-btn-action" onClick={async () => {
+
+                            await projectController.createNewMap();
+                            console.log("Criar novo mapa");
+
+                        } }>
                             + Novo Mapa
                         </button>
                         
