@@ -63,3 +63,41 @@
 .context-menu li.danger:hover {
     background-color: #a1260d;
 }
+
+/* Ajusta o item da lista deixando-o mais compacto e com o cursor de mãozinha */
+.sidebar-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 4px 8px;      /* Reduzido de 8px 12px para ficar menos esparçado */
+    margin-bottom: 2px;    /* Reduzido para aproximar os mapas */
+    border-radius: 3px;
+    cursor: pointer;
+    color: #cccccc;
+    gap: 8px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/* Estilo padrão do nome do mapa */
+.map-name {
+    font-size: 13px;
+    font-weight: 400;
+    transition: font-weight 0.15s ease, color 0.15s ease;
+}
+
+/* Efeito ao passar o mouse OU quando o item está selecionado (.active) */
+.sidebar-item:hover .map-name,
+.sidebar-item.active .map-name {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.sidebar-item:hover {
+    background-color: #2a2d2e; /* Mantém a cor de fundo padrão de hover estilo VS Code */
+}
+
+/* Garante o fundo destacado para o mapa selecionado */
+.sidebar-item.active {
+    background-color: #37373d; /* Tom clássico de seleção ativa */
+}

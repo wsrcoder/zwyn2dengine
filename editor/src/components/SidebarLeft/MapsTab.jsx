@@ -1,29 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './MapsTab.css';
 
 export default function MapsTab({ projectController, onSelectMap }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
-    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, mapName: null });
+    const [updateTrigger, setUpdateTrigger] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
     const mapsList = projectController?.mapsList || [];
 
-    // Trancar o menu de contexto padrão do navegador e abrir o nosso
-    const handleContextMenu = (e, fileName) => {
-        e.preventDefault();
-        setContextMenu({
-            visible: true,
-            x: e.clientX,
-            y: e.clientY,
-            mapName: fileName
-        });
+    const requestUpdate = async () => {
+        if (projectController.refreshMapsList) {
+            await projectController.refreshMapsList();
+        }
     };
 
-    const closeContextMenu = () => {
-        setContextMenu({ visible: false, x: 0, y: 0, mapName: null });
+    useEffect(() => {
+        async function handleTrigger() {
+            if (updateTrigger) {
+                await requestUpdate();
+                setUpdateTrigger(false);
+                setIsCreating(false);
+            }
+        }
+        handleTrigger();
+    }, [updateTrigger]);
+
+    const handleCreateNewMap = async () => {
+        if (isCreating) return;
+        setIsCreating(true);
+        await projectController.createNewMap();
+        setUpdateTrigger(true);
     };
 
     return (
-        <div className="maps-tab-container" onClick={closeContextMenu}>
+        <div className="maps-tab-container">
             <div className="sidebar-section">
                 <div 
                     className="sidebar-header" 
@@ -35,13 +45,12 @@ export default function MapsTab({ projectController, onSelectMap }) {
 
                 {expandedMaps && (
                     <div className="sidebar-content">
-                        <button className="sidebar-btn-action" onClick={async () => {
-
-                            await projectController.createNewMap();
-                            console.log("Criar novo mapa");
-
-                        } }>
-                            + Novo Mapa
+                        <button 
+                            className="sidebar-btn-action" 
+                            onClick={handleCreateNewMap}
+                            disabled={isCreating}
+                        >
+                            {isCreating ? 'Criando...' : '+ Novo Mapa'}
                         </button>
                         
                         <ul className="sidebar-list">
@@ -55,14 +64,23 @@ export default function MapsTab({ projectController, onSelectMap }) {
                                         key={idx} 
                                         className={`sidebar-item ${isSelected ? 'active' : ''}`}
                                         onClick={() => onSelectMap && onSelectMap(fileName)}
-                                        onContextMenu={(e) => handleContextMenu(e, fileName)}
                                     >
                                         <span className="map-name">🗺️ {displayName}</span>
                                         
-                                        {/* Ações rápidas no Hover */}
+                                        {/* Botões de Ação no Hover */}
                                         <div className="map-actions" onClick={(e) => e.stopPropagation()}>
-                                            <button title="Renomear" onClick={() => console.log("Renomear", fileName)}>✏️</button>
-                                            <button title="Excluir" onClick={() => console.log("Excluir", fileName)}>🗑️</button>
+                                            <button 
+                                                title="Renomear" 
+                                                onClick={() => console.log("Renomear", fileName)}
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button 
+                                                title="Excluir" 
+                                                onClick={() => console.log("Excluir", fileName)}
+                                            >
+                                                🗑️
+                                            </button>
                                         </div>
                                     </li>
                                 );
@@ -71,20 +89,6 @@ export default function MapsTab({ projectController, onSelectMap }) {
                     </div>
                 )}
             </div>
-
-            {/* Menu de Contexto Flutuante (Botão Direito) */}
-            {contextMenu.visible && (
-                <ul 
-                    className="context-menu" 
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                >
-                    <li onClick={() => { console.log("Abrir", contextMenu.mapName); }}>Abrir Mapa</li>
-                    <li onClick={() => { console.log("Duplicar", contextMenu.mapName); }}>Duplicar</li>
-                    <li onClick={() => { console.log("Renomear", contextMenu.mapName); }}>Renomear</li>
-                    <hr />
-                    <li className="danger" onClick={() => { console.log("Excluir", contextMenu.mapName); }}>Excluir</li>
-                </ul>
-            )}
         </div>
     );
 }
