@@ -1,131 +1,108 @@
 import React, { useState } from 'react';
+import MapsTab from './MapsTab';
 import { LayerType } from '../../Constants/LayerType.js';
 import { LayerBucketMap } from '../../Constants/LayerBucketMap.js';
 import './SidebarLeft.css';
 
-export default function SidebarLeft({ projectController, editorController, onSelectMap }) {
-    const [expandedMaps, setExpandedMaps] = useState(true);
+export default function SidebarLeft({ 
+    projectController, 
+    editorController, 
+    onSelectMap,
+    activeTab,
+    setActiveTab 
+}) {
     const [expandedLayers, setExpandedLayers] = useState(true);
-
-    const mapsList = projectController?.mapsList || [];
     const activeLayer = editorController?.activeLayer || { category: 'mapLayers', index: 0 };
 
     return (
         <div className="sidebar-left">
-            {/* --- SEÇÃO 1: MAPAS E CENAS --- */}
-            <div className="sidebar-section">
-                <div 
-                    className="sidebar-header" 
-                    onClick={() => setExpandedMaps(!expandedMaps)}
+            {/* Cabeçalho de Abas da Sidebar Esquerda */}
+            <div className="sidebar-tabs-header">
+                <button 
+                    className={`tab-btn ${activeTab === 'maps' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('maps')}
                 >
-                    <span>📁 Mapas e Cenas</span>
-                    <span>{expandedMaps ? '▼' : '▶'}</span>
-                </div>
+                    Mapas
+                </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'layers' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('layers')}
+                >
+                    Camadas
+                </button>
+            </div>
 
-                {console.log("hello world")}
-                {console.log(projectController.currentMapData)}
-                {expandedMaps && (
-                    
-                    <div className="sidebar-content">
-                        <button className="sidebar-btn-action" onClick={() => console.log("Criar novo mapa")}>
-                            + Novo Mapa
-                        </button>
-                        
-                        <ul className="sidebar-list">
-                            {mapsList.map((mapItem, idx) => {
-                                // mapItem.name aqui é "Map0001.json" vindo do ProjectController
-                                const fileName = mapItem.name || mapItem;
-                                const displayName = fileName.replace('.json', ''); // Fica "Map0001" para exibição
+            {/* Conteúdo Dinâmico Baseado na Aba Ativa */}
+            <div className="sidebar-tab-content">
+                {activeTab === 'maps' && (
+                    <MapsTab 
+                        projectController={projectController} 
+                        onSelectMap={onSelectMap} 
+                    />
+                )}
+
+                {activeTab === 'layers' && projectController.currentMapData && (
+                    <div className="sidebar-section">
+                        <div 
+                            className="sidebar-header"
+                            onClick={() => setExpandedLayers(!expandedLayers)}
+                        >
+                            <span>Mapa: {projectController.currentMapData.name}</span>
+                            <span>{expandedLayers ? '▼' : '▶'}</span>
+                        </div>
+
+                        {expandedLayers && (
+                            <div className="sidebar-content layers-tree">
+
+                                {/* Bucket: Background Layers */}
+                                <div className="layer-category-group">
+                                    <div className="category-title">Camadas de Fundo</div>
+                                    {projectController.currentMapData.backgroundLayers?.map((layer, index) => (
+                                        <div 
+                                            key={`bg-${index}`}
+                                            className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.BACKGROUND] && activeLayer.index === index ? 'selected' : ''}`}
+                                            onClick={() => editorController?.setActiveLayer(LayerType.BACKGROUND, index)}
+                                        >
+                                            <span>🌄 {layer.name}</span>
+                                            <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
+                                        </div>
+                                    ))}
+                                </div>
                                 
-                                console.log("map name: " + projectController.currentMapData.name);
-                                console.log("display name:" + displayName);
-                                // Compara o nome limpo do arquivo com a propriedade name do currentMapData em memória
-                                const isSelected = projectController.currentMapData?.name === displayName;
+                                {/* Bucket: Map Layers (Tile) */}
+                                <div className="layer-category-group">
+                                    <div className="category-title">Camadas de Tiles</div>
+                                    {projectController.currentMapData.mapLayers?.map((layer, index) => (
+                                        <div 
+                                            key={`map-${index}`}
+                                            className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.TILE] && activeLayer.index === index ? 'selected' : ''}`}
+                                            onClick={() => editorController?.setActiveLayer(LayerType.TILE, index)}
+                                        >
+                                            <span>🧱 {layer.name}</span>
+                                            <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
+                                        </div>
+                                    ))}
+                                </div>
 
-                                return (
-                                    <li 
-                                        key={idx} 
-                                        className={`sidebar-item ${isSelected ? 'active' : ''}`}
-                                        onClick={() => {
-                                            console.log("[SidebarLeft] Clicou no mapa:", fileName);
-                                            if (onSelectMap) {
-                                                onSelectMap(fileName); // Envia "Map0001.json" para o load
-                                            }
-                                        }}
-                                    >
-                                        🗺️ {displayName}
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                {/* Bucket: Event Layers */}
+                                <div className="layer-category-group">
+                                    <div className="category-title">Camadas de Eventos</div>
+                                    {projectController.currentMapData.eventLayers?.map((layer, index) => (
+                                        <div 
+                                            key={`evt-${index}`}
+                                            className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.EVENT] && activeLayer.index === index ? 'selected' : ''}`}
+                                            onClick={() => editorController?.setActiveLayer(LayerType.EVENT, index)}
+                                        >
+                                            <span>⚡ {layer.name}</span>
+                                            <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-
-            {/* --- SEÇÃO 2: HIERARQUIA DE CAMADAS (LAYERS) DO MAPA ATUAL --- */}
-        
-            {projectController.currentMapData && (
-                <div className="sidebar-section">
-                    <div 
-                        className="sidebar-header"
-                        onClick={() => setExpandedLayers(!expandedLayers)}
-                    >
-                        <span>レイ Camadas do Mapa</span>
-                        <span>{expandedLayers ? '▼' : '▶'}</span>
-                    </div>
-
-                    {expandedLayers && (
-                        <div className="sidebar-content layers-tree">
-                            
-                            {/* Bucket: Map Layers (Tile) */}
-                            <div className="layer-category-group">
-                                <div className="category-title">Camadas de Tiles</div>
-                                {projectController.currentMapData.mapLayers?.map((layer, index) => (
-                                    <div 
-                                        key={`map-${index}`}
-                                        className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.TILE] && activeLayer.index === index ? 'selected' : ''}`}
-                                        onClick={() => editorController?.setActiveLayer(LayerType.TILE, index)}
-                                    >
-                                        <span>🧱 {layer.name}</span>
-                                        <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Bucket: Background Layers */}
-                            <div className="layer-category-group">
-                                <div className="category-title">Camadas de Fundo</div>
-                                {projectController.currentMapData.backgroundLayers?.map((layer, index) => (
-                                    <div 
-                                        key={`bg-${index}`}
-                                        className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.BACKGROUND] && activeLayer.index === index ? 'selected' : ''}`}
-                                        onClick={() => editorController?.setActiveLayer(LayerType.BACKGROUND, index)}
-                                    >
-                                        <span>🌄 {layer.name}</span>
-                                        <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Bucket: Event Layers */}
-                            <div className="layer-category-group">
-                                <div className="category-title">Camadas de Eventos</div>
-                                {projectController.currentMapData.eventLayers?.map((layer, index) => (
-                                    <div 
-                                        key={`evt-${index}`}
-                                        className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.EVENT] && activeLayer.index === index ? 'selected' : ''}`}
-                                        onClick={() => editorController?.setActiveLayer(LayerType.EVENT, index)}
-                                    >
-                                        <span>⚡ {layer.name}</span>
-                                        <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 }

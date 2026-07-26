@@ -8,6 +8,8 @@ import StatusBar from './components/StatusBar';
 import { ProjectController } from './controllers/ProjectController.js';
 import { EditorController } from './controllers/EditorController.js';
 
+import { MapDataModel } from './models/MapDataModel/MapDataModel.js';
+
 import './index.css';
 import './App.css';
 
@@ -20,7 +22,9 @@ export default function App() {
   const editorController = editorControllerRef.current;
 
   // Estados locais para abas e componentes da UI que o React ainda precisa exibir
+  const [activeLeftTab, setActiveLeftTab] = useState('maps');
   const [activeTab, setActiveTab] = useState('tilesets');
+
   const [showGrid, setShowGrid] = useState(true);
 
   // Estado que alimenta a Viewport com o modelo do mapa atual
@@ -92,15 +96,17 @@ export default function App() {
           className="sidebar-left" 
           projectController={projectController}
           editorController={editorController}
-          mapDataModel={mapDataModel}
-          onMapChange={(index) => {
-            // Exemplo de comportamento caso ela precise recarregar o mapa ao selecionar na lista
-            projectController.loadMapByIndex(index).then(() => {
-              const updatedMap = projectController.getCurrentMap();
-              if (updatedMap) {
-                setMapDataModel(Object.assign(new MapDataModel(), updatedMap));
+          activeTab={activeLeftTab}
+          setActiveTab={setActiveLeftTab}
+          onSelectMap={async (mapFileName) => {
+            const index = projectController.mapsList.findIndex(m => m.name === mapFileName);
+            if (index !== -1) {
+              await projectController.loadMapByIndex(index);
+              const loadedMap = projectController.getCurrentMap();
+              if (loadedMap) {
+                setMapDataModel(new MapDataModel(loadedMap));
               }
-            });
+            }
           }}
         />
         

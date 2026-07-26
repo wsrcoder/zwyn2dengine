@@ -1,0 +1,65 @@
+
+/* Estilos específicos para a aba de mapas */
+.maps-tab-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.maps-tab-container .sidebar-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.maps-tab-container .sidebar-content {
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.maps-tab-container .sidebar-btn-action {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    background-color: #2c3e50;
+    color: #ffffff;
+    border: 1px solid #34495e;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.maps-tab-container .sidebar-btn-action:hover {
+    background-color: #34495e;
+}
+
+.maps-tab-container .sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.maps-tab-container .sidebar-item {
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.maps-tab-container .sidebar-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+.maps-tab-container .sidebar-item.active {
+    background-color: #1e3a8a;
+    color: #ffffff;
+    font-weight: 500;
+}
