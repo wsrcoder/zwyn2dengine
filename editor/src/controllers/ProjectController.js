@@ -18,9 +18,8 @@ export class ProjectController {
                 isModified: false,
             },
             map: {
-                current: null, //antingo currentMapData
-                cache: [], //lista de mapas modificados que devem ficar em memoria até salvar
-                index: 0 //antigo current MapIndex
+                currentId: null,      // Apenas o ID do mapa atual. Zero redundância!
+                cache: new Map()      // O Map do JS que guarda tudo
             }
         }
     }
@@ -124,12 +123,18 @@ export class ProjectController {
             mapJsonString
         );
 
-        // 5. Define o mapa criado como o mapa atual na sessão
-        this.session.map.current = initialMapModel;
-        this.session.map.index = 0;
+        // 5. Define o mapa criado como o mapa atual na sessão (via cache)
+        this.session.map.cache.set(initialMapModel.id, {
+            model: initialMapModel,
+            fileName: firstMap.fileName,
+            isModified: false
+        });
+
+        this.session.map.currentId = initialMapModel.id;
         this.session.project.isModified = false;
 
         console.log("[ProjectController] Projeto criado com sucesso!");
+        console.log("[Debug Cache] Mapas na memória:", Array.from(this.session.map.cache.entries()));
 
     }
 
@@ -174,15 +179,29 @@ export class ProjectController {
             return false;
         }
 
-        // 4. Carrega o primeiro mapa utilizando o novo fluxo (fetchMapDataByIndex) se houver mapas
-        if (this.mapManager.mapsList.length > 0) {
+        // Limpa o cache antigo antes de abrir um novo projeto
+        this.session.map.cache.clear();
+        this.session.map.currentId = null;
+
+        // 4. Carrega o primeiro mapa utilizando o MapManager e armazena no cache
+        const allMaps = this.mapManager.getMaps();
+        if (allMaps.length > 0) {
+            const firstMapMeta = allMaps[0];
             const result = await this.mapManager.fetchMapDataByIndex(0, this.session.project.path);
             
-            if (result) {
-                this.session.map.current = result.mapModel;
-                this.session.map.index = result.index;
+            if (result && result.mapModel) {
+                // Insere o primeiro mapa no cache usando o padrão novo
+                this.session.map.cache.set(firstMapMeta.id, {
+                    model: result.mapModel,
+                    fileName: firstMapMeta.fileName,
+                    isModified: false
+                });
+
+                // Define o ID atual
+                this.session.map.currentId = firstMapMeta.id;
                 this.session.project.isModified = false;
-                console.log("[ProjectController] Primeiro mapa carregado com sucesso para a sessão.");
+
+                console.log("[ProjectController] Primeiro mapa carregado com sucesso para o cache da sessão.");
                 return true;
             } else {
                 console.warn("[ProjectController] Não foi possível carregar os dados do primeiro mapa do disco.");
@@ -196,27 +215,46 @@ export class ProjectController {
     async closeProject() {
         console.log("[ProjectController] Fechando o projeto atual...");
 
-        // Opcional: Se quiser checar se há alterações não salvas antes de fechar de vez:
-        if (this.session.project.isModified) {
-            console.warn("[ProjectController] Existem alterações não salvas no projeto.");
-            // Aqui você pode decidir retornar false ou abrir um modal de confirmação no futuro
+        // 1. Verifica se o projeto ou algum mapa no cache possui alterações não salvas
+        let hasUnsavedChanges = this.session.project.isModified;
+        
+        if (!hasUnsavedChanges) {
+            for (const entry of this.session.map.cache.values()) {
+                if (entry.isModified) {
+                    hasUnsavedChanges = true;
+                    break;
+                }
+            }
         }
 
-        // Reseta totalmente a sessão para o estado inicial/vazio
+        if (hasUnsavedChanges) {
+            console.warn("[ProjectController] Existem alterações não salvas no projeto ou em mapas abertos.");
+            // Aqui no futuro você pode abrir um modal de confirmação (Salvar / Descartar / Cancelar)
+        }
+
+        // 2. Reseta totalmente a sessão para o estado inicial/vazio
         this.session.project.path = null;
         this.session.project.data = null;
         this.session.project.isModified = false;
 
-        this.session.map.current = null;
-        this.session.map.index = null;
+        // Limpa a nova estrutura de mapas da sessão
+        this.session.map.currentId = null;
+        this.session.map.cache.clear();
 
-        // Limpa o gerenciador de mapas
+        // 3. Limpa o gerenciador de mapas
         this.mapManager = new MapManager([]);
 
-        console.log("[ProjectController] Projeto fechado com sucesso. Sessão limpa.");
+        console.log("[ProjectController] Projeto fechado com sucesso. Sessão e cache limpos.");
         return true;
     }
 
+    
+    // TODO: Atualizar o fluxo de modificações para garantir que o cache seja 
+    // devidamente atualizado e marcado como modificado (isModified = true) quando:
+    // 1. Um mapa existente sofrer alterações (tiles, eventos, etc.).
+    // 2. Um novo mapa for criado (ele já deve ser inserido diretamente no cache).
+    // 3. Uma nova camada for adicionada a um mapa.
+    // Ajustar essa sincronização à medida que o editor continuar evoluindo.
     async saveProject() {
         if (!this.session.project.path || !this.session.project.data) {
             console.error("[ProjectController] Nenhum projeto aberto para salvar.");
@@ -225,34 +263,37 @@ export class ProjectController {
 
         try {
             console.log("[ProjectController] Salvando projeto...");
-
             const projectPath = this.session.project.path;
 
-            // 1. Salva o project.json usando o método .toJSON() do model
-            const projectJsonPath = `${projectPath}/project.json`;
-            const projectDataJson = this.session.project.data.toJSON();
-            await window.electronAPI.saveJsonFile(projectJsonPath, projectDataJson);
-            console.log("[ProjectController] project.json salvo com sucesso.");
+            // 1. Salva o project.json
+            await window.electronAPI.saveJsonFile(`${projectPath}/project.json`, this.session.project.data.toJSON());
 
-            // 2. Salva o mapa atual (se houver um carregado na sessão)
-            if (this.session.map.current && this.session.map.index !== null) {
-                const currentMapInfo = this.mapManager.getMaps()[this.session.map.index];
+            // 2. Percorre o cache de forma direta e eficiente
+            for (const [mapId, cacheEntry] of this.session.map.cache.entries()) {
+                if (cacheEntry.isModified) {
+                    // O fileName já está guardado junto, zero buscas necessárias!
+                    const mapFilePath = `${projectPath}/Data/Maps/${cacheEntry.fileName}`;
                 
-                if (currentMapInfo && currentMapInfo.fileName) {
-                    const mapFilePath = `${projectPath}/Data/Maps/${currentMapInfo.fileName}`;
-                    
-                    // Usa o MapDataModel para serializar e aplica o compact arrays se necessário
-                    const mapDataJson = this.session.map.current.toJSON();
-                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(mapDataJson);
-
+                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(cacheEntry.model.toJSON());
                     await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
-                    console.log(`[ProjectController] Mapa atual (${currentMapInfo.fileName}) salvo com sucesso.`);
+                
+                    cacheEntry.isModified = false;
+                    console.log(`[ProjectController] Mapa ${cacheEntry.fileName} salvo.`);
                 }
             }
 
-            // 3. Reseta a flag de modificação
+            // 3. Otimização de Memória: limpa o cache e mantém APENAS o atual
+            const currentId = this.session.map.currentId;
+            const currentEntry = this.session.map.cache.get(currentId);
+
+            this.session.map.cache.clear();
+
+            if (currentEntry) {
+                this.session.map.cache.set(currentId, currentEntry);
+            }
+
             this.session.project.isModified = false;
-            console.log("[ProjectController] Projeto salvo por completo!");
+            console.log("[ProjectController] Projeto salvo e cache limpo com sucesso!");
             return true;
 
         } catch (error) {
@@ -263,54 +304,6 @@ export class ProjectController {
 
 
 
-
-
-    
-    async saveProjectInfo(){
-        if(!this.projectPath){
-            console.error(`[ProjectController] Impossivel salvar: Nenhum projectPath definido.`);
-            return;
-        }
-
-        const jsonFilePath = `${this.projectPath}/project.json`;
-
-        const projectInfo = {
-            projectName: this.projectName,
-            version: "1.0.0",
-            maps: this.mapManager.getMaps() // Salva o array padronizado vindo do MapManager
-        }
-
-        try{
-            await window.electronAPI.saveJsonFile(jsonFilePath, projectInfo);
-            console.log(`[ProjectController] project.json salvo com sucesso.`)
-        }catch(error){
-            console.log(`[ProjectController] Erro ao salvar o projeto`, error);
-            throw error;
-        }
-    }
-
-    async removeFromMapsList(mapId){
-        const removed = this.mapManager.removeMap(mapId);
-        if(!removed){
-            console.warn(`[ProjectController] Mapa com ID ${mapId} não encontrado para remoção.`);
-            return;
-        }
-
-        console.log(`[ProjectController] Mapa removido com ID:`, mapId);
-        await this.saveProjectInfo();
-        return true;
-    }
-
-    async updateMapInfo(mapId, newName) {
-        const updated = this.mapManager.updateMapName(mapId, newName);
-        if(!updated) {
-            throw new Error(`Mapa com ID ${mapId} não encontrado.`);
-        }
-
-        console.log(`[ProjectController] Informações do mapa ${mapId} atualizadas.`);
-        await this.saveProjectInfo();
-        return true;
-    }
 
     async createNewMap() {
         try {

@@ -13,6 +13,9 @@ export default function SidebarLeft({
 }) {
     const [expandedLayers, setExpandedLayers] = useState(true);
     const activeLayer = editorController?.activeLayer || { category: 'mapLayers', index: 0 };
+    
+    // Pega o mapa atual diretamente do cache via editorController
+    const currentMap = editorController ? editorController.getCurrentMap() : null;
 
     return (
         <div className="sidebar-left">
@@ -41,13 +44,13 @@ export default function SidebarLeft({
                     />
                 )}
 
-                {activeTab === 'layers' && projectController.currentMapData && (
+                {activeTab === 'layers' && currentMap && (
                     <div className="sidebar-section">
                         <div 
                             className="sidebar-header"
                             onClick={() => setExpandedLayers(!expandedLayers)}
                         >
-                            <span>Mapa: {projectController.currentMapData.name}</span>
+                            <span>Mapa: {currentMap.name}</span>
                             <span>{expandedLayers ? '▼' : '▶'}</span>
                         </div>
 
@@ -57,7 +60,7 @@ export default function SidebarLeft({
                                 {/* Bucket: Background Layers */}
                                 <div className="layer-category-group">
                                     <div className="category-title">Camadas de Fundo</div>
-                                    {projectController.currentMapData.backgroundLayers?.map((layer, index) => (
+                                    {currentMap.backgroundLayers?.map((layer, index) => (
                                         <div 
                                             key={`bg-${index}`}
                                             className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.BACKGROUND] && activeLayer.index === index ? 'selected' : ''}`}
@@ -72,7 +75,7 @@ export default function SidebarLeft({
                                 {/* Bucket: Map Layers (Tile) */}
                                 <div className="layer-category-group">
                                     <div className="category-title">Camadas de Tiles</div>
-                                    {projectController.currentMapData.mapLayers?.map((layer, index) => (
+                                    {currentMap.mapLayers?.map((layer, index) => (
                                         <div 
                                             key={`map-${index}`}
                                             className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.TILE] && activeLayer.index === index ? 'selected' : ''}`}
@@ -87,7 +90,7 @@ export default function SidebarLeft({
                                 {/* Bucket: Event Layers */}
                                 <div className="layer-category-group">
                                     <div className="category-title">Camadas de Eventos</div>
-                                    {projectController.currentMapData.eventLayers?.map((layer, index) => (
+                                    {currentMap.eventLayers?.map((layer, index) => (
                                         <div 
                                             key={`evt-${index}`}
                                             className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.EVENT] && activeLayer.index === index ? 'selected' : ''}`}

@@ -55,7 +55,7 @@ export default function Viewport({ editorController, mapDataModel }) {
             }
 
             const img = new Image();
-            img.src = `../../Assets/Tilesets/${tileset.image?.name || tileset.name}`;
+            img.src = `../../Assets/Tilesets/${tileset.image?.fileName}`;
 
             img.onload = () => {
                 console.log(`[Viewport] Tileset [${tileset.name}] carregado com sucesso.`);

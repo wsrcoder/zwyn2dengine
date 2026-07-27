@@ -41,7 +41,15 @@ export class EditorController {
      */
     getCurrentMap() {
         if (!this.projectController) return null;
-        return this.projectController.getCurrentMap();
+        
+        const session = this.projectController.session;
+        if (!session || !session.map || !session.map.currentId) return null;
+        
+        const cacheEntry = session.map.cache.get(session.map.currentId);
+
+        console.log("[EditorController: cacheEntry:]");
+        console.log(cacheEntry);
+        return cacheEntry ? cacheEntry.model : null;
     }
 
     /**
