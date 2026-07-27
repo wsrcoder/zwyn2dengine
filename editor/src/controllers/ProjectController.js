@@ -1,222 +1,271 @@
-import { TiledLoader } from '../parsers/Tiled/TiledLoader.js';
+
+
+import { ProjectDataModel } from '../models/ProjectDataModel/ProjectDataModel.js';
 import { MapDataModel } from '../models/MapDataModel/MapDataModel.js';
 import { ImageUtils } from '../utils/ImageUtils.js';
 import { JsonUtils } from '../utils/JsonUtils.js';
+import MapManager from './MapManager.js'; 
 
 export class ProjectController {
     constructor() {
-        this.projectPath = null;
-        this.projectName = null;
-        this.isModified = false;
 
-        this.mapsList = []; 
-        this.currentMapIndex = 0;
-        this.currentMapData = null; // Instância do MapDataModel
+        this.mapManager = new MapManager(); // <-- Instancia o gerenciador de mapas
 
-    }
-
-    async initProject(projectName, projectPath, mapFileNames = []) {
-        this.projectPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
-        this.projectName = projectName;
-        
-        this.mapsList = mapFileNames.map((fileName, index) => ({
-            id: `map_${index}`,
-            name: fileName,
-            dirPath: this.projectPath
-        }));
-
-        if (this.mapsList.length > 0) {
-            await this.loadMapByIndex(0);
-        }
-    }
-
-    async openProject(projectPath) {
-        this.projectPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
-        
-        const jsonFilePath = `${this.projectPath}/project.json`;
-        console.log("[ProjectController] Tentando ler o arquivo em:", jsonFilePath);
-
-        const response = await window.electronAPI.loadJsonFile(jsonFilePath);
-        console.log("[ProjectController] Resposta bruta da API:", response);
-
-        // Extrai o objeto de configuração independentemente de vir puro ou encapsulado em .data / .content
-        let projectConfig = null;
-        if (response) {
-            if (response.data) {
-                projectConfig = response.data;
-            } else if (response.content) {
-                projectConfig = typeof response.content === 'string' ? JSON.parse(response.content) : response.content;
-            } else {
-                projectConfig = response; // Caso venha direto o objeto JSON
+        this.session = {
+            project: {
+                path: null,
+                data: new ProjectDataModel(),
+                isModified: false,
+            },
+            map: {
+                current: null, //antingo currentMapData
+                cache: [], //lista de mapas modificados que devem ficar em memoria até salvar
+                index: 0 //antigo current MapIndex
             }
         }
-
-        console.log("[ProjectController] projectConfig processado:", projectConfig);
-
-        if (projectConfig && typeof projectConfig === 'object') {
-            this.projectName = projectConfig.projectName || "Unnamed Project";
-
-            if (Array.isArray(projectConfig.maps)) {
-                this.mapsList = projectConfig.maps.map(mapItem => ({
-                    id: mapItem.id,
-                    name: mapItem.name, 
-                    dirPath: `${this.projectPath}/Data/Maps`
-                }));
-                console.log("[ProjectController] mapsList populada com sucesso:", this.mapsList);
-            } else {
-                console.warn("[ProjectController] O arquivo project.json não possui um array de 'maps' válido.");
-            }
-        } else {
-            console.error("[ProjectController] Falha crítica: projectConfig é inválido ou nulo.");
-        }
-
-        if (this.mapsList.length > 0) {
-            await this.loadMapByIndex(0);
-        }
     }
 
-    async loadMapByIndex(index) {
-        if (index < 0 || index >= this.mapsList.length) {
-            console.error("[ProjectController] Índice de mapa inválido:", index);
-            return false;
-        }
-
-        const mapInfo = this.mapsList[index];
-        console.log(`[ProjectController] Carregando mapa [${index}]: ${mapInfo.name} em ${mapInfo.dirPath}`);
-
-        try {
-            const fullPath = `${mapInfo.dirPath}/${mapInfo.name}`;
-            const fileContent = await window.electronAPI.loadJsonFile(fullPath);
-            
-            
-
-            if (!fileContent) {
-                console.error("[ProjectController] Erro ao ler arquivo do disco: Conteúdo vazio.");
-                return false;
-            }
-
-            // Suporta tanto formato direto quanto encapsulado em .data
-            const rawData = fileContent.data ? fileContent.data : fileContent;
-  
-
-            this.currentMapData = new MapDataModel(rawData);
-            this.currentMapIndex = index;
-            this.isModified = false;
-
-            console.log("[ProjectController] MapDataModel instanciado com sucesso:", this.currentMapData);
-            return true;
-        } catch (error) {
-            console.error("[ProjectController] Erro ao carregar o mapa do disco:", error);
-            return false;
-        }
+    // Atalho para manter compatibilidade com o restante do app que lê projectController.mapsList
+    get mapsList() {
+        return this.mapManager ? this.mapManager.getMaps() : [];
     }
 
-    getCurrentMap() {
-        return this.currentMapData;
-    }
 
     async createNewProject(projectRootPath, projectName) {
-        const normalizedPath = projectRootPath.replace(/\\/g, '/');
+        const normalizedPath = projectRootPath.replace(/\\/g,'/');
+
+        // 1. Salva o caminho na sessão logo no começo
+        this.session.project.path = normalizedPath;
 
         await window.electronAPI.createDirectory(`${normalizedPath}/Data/Maps`);
         await window.electronAPI.createDirectory(`${normalizedPath}/Assets/Tilesets`);
 
+        let default_tileset= 'TLS0000001';
+
         const defaultTilesets = [
             {
-                fileName: 'TLS0000001.png',
-                sourcePath: './Assets/Tilesets/TLS0000001.png'
+                fileName: default_tileset + '.png',
+                sourcePath: './Assets/Tilesets/' + default_tileset + '.png'
             }
-        ];
+        ]; 
 
-        try {
-            for (const tileset of defaultTilesets) {
+        try{
+            for(const tileset of defaultTilesets){
                 await ImageUtils.copyImageTo(
-                    tileset.sourcePath, 
-                    normalizedPath, 
-                    'Assets/Tilesets', 
+                    tileset.sourcePath,
+                    normalizedPath,
+                    'Assets/Tilesets',
                     tileset.fileName
                 );
             }
-            console.log("[ProjectController] Tilesets padrão copiados com sucesso!");
-        } catch (error) {
+
+            console.log('[ProjectController] Tilesets padrão copiados com sucesso.');
+        }catch(error){
             console.warn("[ProjectController] Não foi possível copiar os tilesets padrão automaticamente:", error.message);
         }
 
-        const projectInfo = {
-            projectName: projectName,
-            version: "1.0",
-            maps: [
-                { id: "map_0001", name: "Map0001.json" }
-            ]
-        };
-        
-        await window.electronAPI.saveJsonFile(`${normalizedPath}/project.json`, projectInfo);
+        //inicializa os dados do projeto usando o projectDataModel
+        this.session.project.data = new ProjectDataModel({
+            settings:{
+                projectName: projectName,
+                grid:{
+                    default: {
+                        columns: 20,
+                        rows: 15
+                    }
+                }
+            }
+        });
 
+
+        // 2. Inicializa o MapManager com os mapas vindos do ProjectDataModel
+        this.mapManager = new MapManager(this.session.project.data.maps);
+        
+        // Pega a referência do primeiro mapa gerado pelo modelo/gerenciador
+        const firstMap = this.mapManager.getMaps()[0];
+
+
+        // 3. Salva o arquivo project.json usando o método .toJSON() do model
+        await window.electronAPI.saveJsonFile(`${normalizedPath}/project.json`, this.session.project.data.toJSON());
+
+        // 4. Cria e salva o arquivo de dados do mapa inicial
         const defaultRawMap = {
-            id: "map_0001",
-            name: "Map0001.json",
-            columns: 20,
-            rows: 15,
+            id: firstMap.id,
+            name: firstMap.name,
+            fileName: firstMap.fileName,
+            columns: firstMap.columns,
+            rows: firstMap.rows,
             tile: { width: 32, height: 32 },
             orientation: "orthogonal",
             renderorder: "right-down",
             tilesets: [
                 {
                     firstgid: 1,
-                    name: "TLS0000001",
+                    name: default_tileset,
                     columns: 32,
                     rows: 32,
-                    image: { name: "TLS0000001.png", width: 1024, height: 1024 },
+                    image: { fileName: default_tileset + ".png", width: 1024, height: 1024 },
                     tile: { width: 32, height: 32, count: 1024 },
                     meta: {}
                 }
             ],
-            backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-            mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-            eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-            UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }]
+            backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }],
+            mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }],
+            eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }],
+            UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }]
         };
-    
+
+
         const initialMapModel = new MapDataModel(defaultRawMap);
         const mapJsonString = JsonUtils.stringifyWithCompactArrays(initialMapModel.toJSON());
 
         await window.electronAPI.saveTextFile(
-            `${normalizedPath}/Data/Maps/Map0001.json`, 
+            `${normalizedPath}/Data/Maps/${firstMap.fileName}`, 
             mapJsonString
         );
 
+        // 5. Define o mapa criado como o mapa atual na sessão
+        this.session.map.current = initialMapModel;
+        this.session.map.index = 0;
+        this.session.project.isModified = false;
+
         console.log("[ProjectController] Projeto criado com sucesso!");
 
-        // Garante que o projeto recém-criado já carregue as configurações e o mapa inicial
-        await this.openProject(normalizedPath);
     }
 
-    //adiciona um novo mapa a lista do projeto
-    async addToMapsList(mapId, mapName){
-        if(!this.projectPath){
-            throw new Error("Nenhum projeto aberto para adicionar mapas.");
+    async openProject(projectPath) {
+        // 1. Normaliza o caminho do projeto e salva na sessão
+        const normalizedPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
+        this.session.project.path = normalizedPath;
+
+        const jsonFilePath = `${normalizedPath}/project.json`;
+        console.log("[ProjectController] Tentando ler o arquivo em:", jsonFilePath);
+
+        const response = await window.electronAPI.loadJsonFile(jsonFilePath);
+        console.log("[ProjectController] Resposta bruta da API:", response);
+
+        let projectInfo = null;
+        if (response) {
+            if (response.data) {
+                projectInfo = response.data;
+            } else if (response.content) {
+                projectInfo = typeof response.content === 'string' ? JSON.parse(response.content) : response.content;
+            } else {
+                projectInfo = response;
+            }
         }
 
-        const exists = this.mapsList.some(m => m.id === mapId || m.name === mapName);
+        console.log("[ProjectController] projectConfig processado:", projectInfo);
 
-        if(exists){
-            console.warn(`[ProjectController] O mapa ${mapName} (${mapId}) já existe na lista.`);
+        if (projectInfo && typeof projectInfo === 'object') {
+            // 2. Instancia o ProjectDataModel e guarda na sessão
+            this.session.project.data = new ProjectDataModel(projectInfo);
+            this.session.project.isModified = false;
+
+            // 3. Inicializa o MapManager usando a lista de mapas do modelo da sessão
+            const mapsSource = this.session.project.data.maps || [];
+            this.mapManager = new MapManager(mapsSource);
+            
+            console.log("[ProjectController] mapsList populada com sucesso via MapManager:", this.mapManager.mapsList);
+        } else {
+            console.error("[ProjectController] Falha crítica: projectConfig é inválido ou nulo.");
+            this.session.project.data = new ProjectDataModel();
+            this.mapManager = new MapManager([]);
             return false;
         }
 
-        const newMapItem = {
-            id: mapId,
-            name: mapName,
-            dirPath: `${this.projectPath}/Data/Maps`
-        };
+        // 4. Carrega o primeiro mapa utilizando o novo fluxo (fetchMapDataByIndex) se houver mapas
+        if (this.mapManager.mapsList.length > 0) {
+            const result = await this.mapManager.fetchMapDataByIndex(0, this.session.project.path);
+            
+            if (result) {
+                this.session.map.current = result.mapModel;
+                this.session.map.index = result.index;
+                this.session.project.isModified = false;
+                console.log("[ProjectController] Primeiro mapa carregado com sucesso para a sessão.");
+                return true;
+            } else {
+                console.warn("[ProjectController] Não foi possível carregar os dados do primeiro mapa do disco.");
+                return false;
+            }
+        }
 
-        this.mapsList.push(newMapItem);
-        console.log(`[ProjectController] Mapa ${mapName} adicionado à lista.`);
-
-        await this.saveProjectInfo();
         return true;
     }
 
+    async closeProject() {
+        console.log("[ProjectController] Fechando o projeto atual...");
+
+        // Opcional: Se quiser checar se há alterações não salvas antes de fechar de vez:
+        if (this.session.project.isModified) {
+            console.warn("[ProjectController] Existem alterações não salvas no projeto.");
+            // Aqui você pode decidir retornar false ou abrir um modal de confirmação no futuro
+        }
+
+        // Reseta totalmente a sessão para o estado inicial/vazio
+        this.session.project.path = null;
+        this.session.project.data = null;
+        this.session.project.isModified = false;
+
+        this.session.map.current = null;
+        this.session.map.index = null;
+
+        // Limpa o gerenciador de mapas
+        this.mapManager = new MapManager([]);
+
+        console.log("[ProjectController] Projeto fechado com sucesso. Sessão limpa.");
+        return true;
+    }
+
+    async saveProject() {
+        if (!this.session.project.path || !this.session.project.data) {
+            console.error("[ProjectController] Nenhum projeto aberto para salvar.");
+            return false;
+        }
+
+        try {
+            console.log("[ProjectController] Salvando projeto...");
+
+            const projectPath = this.session.project.path;
+
+            // 1. Salva o project.json usando o método .toJSON() do model
+            const projectJsonPath = `${projectPath}/project.json`;
+            const projectDataJson = this.session.project.data.toJSON();
+            await window.electronAPI.saveJsonFile(projectJsonPath, projectDataJson);
+            console.log("[ProjectController] project.json salvo com sucesso.");
+
+            // 2. Salva o mapa atual (se houver um carregado na sessão)
+            if (this.session.map.current && this.session.map.index !== null) {
+                const currentMapInfo = this.mapManager.getMaps()[this.session.map.index];
+                
+                if (currentMapInfo && currentMapInfo.fileName) {
+                    const mapFilePath = `${projectPath}/Data/Maps/${currentMapInfo.fileName}`;
+                    
+                    // Usa o MapDataModel para serializar e aplica o compact arrays se necessário
+                    const mapDataJson = this.session.map.current.toJSON();
+                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(mapDataJson);
+
+                    await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
+                    console.log(`[ProjectController] Mapa atual (${currentMapInfo.fileName}) salvo com sucesso.`);
+                }
+            }
+
+            // 3. Reseta a flag de modificação
+            this.session.project.isModified = false;
+            console.log("[ProjectController] Projeto salvo por completo!");
+            return true;
+
+        } catch (error) {
+            console.error("[ProjectController] Erro crítico ao salvar o projeto:", error);
+            return false;
+        }
+    }
+
+
+
+
+
+    
     async saveProjectInfo(){
         if(!this.projectPath){
             console.error(`[ProjectController] Impossivel salvar: Nenhum projectPath definido.`);
@@ -227,14 +276,11 @@ export class ProjectController {
 
         const projectInfo = {
             projectName: this.projectName,
-            maps: this.mapsList.map(mapItem => ({
-                id: mapItem.id,
-                name: mapItem.name
-            }))
+            version: "1.0.0",
+            maps: this.mapManager.getMaps() // Salva o array padronizado vindo do MapManager
         }
 
         try{
-            //
             await window.electronAPI.saveJsonFile(jsonFilePath, projectInfo);
             console.log(`[ProjectController] project.json salvo com sucesso.`)
         }catch(error){
@@ -244,30 +290,21 @@ export class ProjectController {
     }
 
     async removeFromMapsList(mapId){
-        const index = this.mapsList.findIndex(m => m.id === mapId);
-
-        if(index === -1){
-            console.warn(`[ProjectController] Mapa com ID ${mapId} não encontrado para remoção.`)
+        const removed = this.mapManager.removeMap(mapId);
+        if(!removed){
+            console.warn(`[ProjectController] Mapa com ID ${mapId} não encontrado para remoção.`);
             return;
         }
 
-        const removed = this.mapsList.splice(index, 1);
-        console.log(`[ProjectController] Mapa removido:`, removed);
-
+        console.log(`[ProjectController] Mapa removido com ID:`, mapId);
         await this.saveProjectInfo();
         return true;
-
     }
 
     async updateMapInfo(mapId, newName) {
-        const mapItem = this.mapsList.find(m => m.id === mapId); // Corrigido para 'this.mapsList' e removido o 'await' desnecessário
-
-        if (!mapItem) {
-            throw new Error(`Mapa com ID ${mapId} não encontrado.`); // Corrigido para crases (``)
-        }
-
-        if (newName) {
-            mapItem.name = newName;
+        const updated = this.mapManager.updateMapName(mapId, newName);
+        if(!updated) {
+            throw new Error(`Mapa com ID ${mapId} não encontrado.`);
         }
 
         console.log(`[ProjectController] Informações do mapa ${mapId} atualizadas.`);
@@ -275,36 +312,18 @@ export class ProjectController {
         return true;
     }
 
-    async createNewMap(){
+    async createNewMap() {
+        try {
+            // 1. Pede para o MapManager gerar a nova estrutura limpa
+            const newMapItem = this.mapManager.createNewMap();
+            newMapItem.dirPath = `${this.projectPath}/Data/Maps`;
 
-        try{
-
-            //descobrir o proximo número sequencial baseado na lista atual de mapas
-            const mapsList = this.mapsList || [];
-
-            let nextIdNumber = 1;
-
-            if(mapsList.length > 0){
-                //Extrai números dos nomes existentes (ex: "Map0001" => 1)
-                const numbers = mapsList.map(m => {
-                    const name = typeof m === 'string' ? m: (m.name || '');
-                    const match = name.match(/\d+/);
-                    return match ? parseInt(match[0], 10): 0;
-                });
-
-                nextIdNumber = Math.max(...numbers) + 1;
-            }
-
-            //Formata com zeros a esquerda(ex: 2 vira "Map0002")
-            const mapId = `Map${String(nextIdNumber).padStart(4,'0')}`;
-            const fileName = `${mapId}.json`;
-
-            //Montar a estrutura Json padrão do novo mapa
+            // 2. Montar a estrutura Json padrão do novo mapa baseada no modelo novo
             const defaultRawMap = {
-                id: mapId,
-                name: mapId,
-                columns: 20,
-                rows: 15,
+                id: newMapItem.id,
+                name: newMapItem.name,
+                columns: newMapItem.width,
+                rows: newMapItem.height,
                 tile: { width: 32, height: 32 },
                 orientation: "orthogonal",
                 renderorder: "right-down",
@@ -319,31 +338,26 @@ export class ProjectController {
                         meta: {}
                     }
                 ],
-                backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-                mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-                eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-                UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }]
+                backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }],
+                mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }],
+                eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }],
+                UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }]
             };
 
             const newMapData = new MapDataModel(defaultRawMap);
             const mapJsonString = JsonUtils.stringifyWithCompactArrays(newMapData.toJSON());
 
-            await window.electronAPI.saveTextFile(`${this.projectPath}/Data/Maps/${fileName}`, mapJsonString);
+            // 3. Salva o arquivo físico no disco
+            await window.electronAPI.saveTextFile(`${newMapItem.dirPath}/${newMapItem.fileName}`, mapJsonString);
 
-            // Adiciona à lista local do controller
-            this.addToMapsList(mapId, fileName);
+            // 4. Atualiza o arquivo project.json global
+            await this.saveProjectInfo();
 
-            //Atualizar o project.json
-            this.saveProjectInfo();
-
-            console.log("[ProjectController] Projeto criado com sucesso!");
-
+            console.log("[ProjectController] Novo mapa criado com sucesso:", newMapItem.name);
             return newMapData;
-        }catch(error){
+        } catch(error) {
             console.error("[ProjectController] Erro ao criar novo mapa:", error);
             return null;
         }
     }
-
-
 }

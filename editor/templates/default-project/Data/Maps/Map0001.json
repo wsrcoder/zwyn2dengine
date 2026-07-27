@@ -1,6 +1,6 @@
 {
-  "id": "map_0001",
-  "name": "Map0001.json",
+  "id": 1,
+  "name": "Map0001",
   "columns": 20,
   "rows": 15,
   "tile": {
@@ -21,7 +21,7 @@
       "columns": 32,
       "rows": 32,
       "image": {
-        "name": "TLS0000001.png",
+        "fileName": "TLS0000001.png",
         "width": 1024,
         "height": 1024
       },

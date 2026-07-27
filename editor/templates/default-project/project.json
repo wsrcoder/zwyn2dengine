@@ -1,37 +1,24 @@
 {
-  "projectName": "Default Project",
+  "meta": {
+    "version": "1.0.0",
+    "updatedAt": "2026-07-27T00:46:05.725Z"
+  },
+  "settings": {
+    "projectName": "Default Project",
+    "grid": {
+      "default": {
+        "columns": 20,
+        "rows": 15
+      }
+    }
+  },
   "maps": [
     {
-      "id": "map_0001",
-      "name": "Map0001.json"
-    },
-    {
-      "id": "Map0002",
-      "name": "Map0002.json"
-    },
-    {
-      "id": "Map0003",
-      "name": "Map0003.json"
-    },
-    {
-      "id": "Map0004",
-      "name": "Map0004.json"
-    },
-    {
-      "id": "Map0005",
-      "name": "Map0005.json"
-    },
-    {
-      "id": "Map0006",
-      "name": "Map0006.json"
-    },
-    {
-      "id": "Map0007",
-      "name": "Map0007.json"
-    },
-    {
-      "id": "Map0008",
-      "name": "Map0008.json"
+      "id": 1,
+      "name": "Map0001",
+      "fileName": "Map0001.json",
+      "columns": 20,
+      "rows": 15
     }
   ]
 }

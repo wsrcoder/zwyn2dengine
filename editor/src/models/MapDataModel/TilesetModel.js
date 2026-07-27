@@ -13,7 +13,7 @@ export class TilesetModel {
         this.rows = data.rows || 1;
         
         this.image = {
-            name: data.image?.name || '',
+            fileName: data.image?.fileName || '',
             width: data.image?.width || 0,
             height: data.image?.height || 0
         };
@@ -68,7 +68,7 @@ export class TilesetModel {
             columns: this.columns,
             rows: this.rows,
             image: {
-                name: this.image.name,
+                fileName: this.image.fileName,
                 width: this.image.width,
                 height: this.image.height
             },

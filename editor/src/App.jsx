@@ -1,134 +1,85 @@
-import React, { useState, useEffect, useRef } from 'react';
-import TopMenu from './components/TopMenu/TopMenu';
-import SidebarLeft from './components/SidebarLeft/SidebarLeft.jsx';
-import Viewport from './components/Viewport/Viewport.jsx';
-import SidebarRight from './components/SidebarRight/SidebarRight.jsx';
-import StatusBar from './components/StatusBar';
-
+import React, { useRef } from 'react';
 import { ProjectController } from './controllers/ProjectController.js';
 import { EditorController } from './controllers/EditorController.js';
-
-import { MapDataModel } from './models/MapDataModel/MapDataModel.js';
 
 import './index.css';
 import './App.css';
 
 export default function App() {
-  // Instancia os controladores globais usando refs para persistirem durante o ciclo de vida
+  // Instancia os controladores globais usando refs
   const projectControllerRef = useRef(new ProjectController());
   const editorControllerRef = useRef(new EditorController());
   
   const projectController = projectControllerRef.current;
-  const editorController = editorControllerRef.current;
 
-  // Estados locais para abas e componentes da UI que o React ainda precisa exibir
-  const [activeLeftTab, setActiveLeftTab] = useState('maps');
-  const [activeTab, setActiveTab] = useState('tilesets');
+  const targetPath = "D:/projects/2026/zwyn2dengine/editor/templates/default-project";
 
-  const [showGrid, setShowGrid] = useState(true);
-
-  // Estado que alimenta a Viewport com o modelo do mapa atual
-  const [mapDataModel, setMapDataModel] = useState(null);
-
-  // Vincula o ProjectController ao EditorController na montagem inicial
-  useEffect(() => {
-    editorController.setProjectController(projectController);
-  }, [projectController, editorController]);
-
+  // Função focada apenas em testar a criação do novo projeto
   const handleTestCreateProject = async () => {
-    const targetPath = "D:/projects/2026/meu-novo-projeto-zwyn";
-    
     try {
-        await projectController.createNewProject(targetPath, "MeuProjetoZwyn");
-        console.log("Tudo pronto! O mapa e as pastas foram gerados e carregados.");
+        console.log("[App] Iniciando teste de criação de projeto...");
+        await projectController.createNewProject(targetPath, "Default Project");
+        console.log("[App] Sucesso! Pastas, project.json e mapa criados corretamente.");
     } catch (error) {
-        console.error("Erro ao criar o novo projeto:", error);
+        console.error("[App] Erro ao criar o novo projeto:", error);
     }
   };
 
-  useEffect(() => {
-    async function initEditorSession() {
-      const templatePath = "D:/projects/2026/zwyn2dengine/Editor/templates/default-project";
-      const projectName = "Default Project";
-
-      try {
-        // Verifica se o diretório do template já existe
-        const projectExists = await window.electronAPI.directoryExists(templatePath);
-
-        if (!projectExists) {
-          console.log("[App] Template não encontrado. Criando novo projeto padrão...");
-          await projectController.createNewProject(templatePath, projectName);
+  // Função focada em testar a abertura de um projeto já existente
+  const handleTestOpenProject = async () => {
+    try {
+        console.log("[App] Iniciando teste de abertura de projeto...");
+        const success = await projectController.openProject(targetPath);
+        
+        if (success) {
+            console.log("[App] Sucesso! Projeto aberto e sessão carregada.");
+            console.log("[App] Estado atual da sessão:", projectController.session);
         } else {
-          console.log("[App] Template já existe. Abrindo projeto existente...");
-          // Abre o projeto existente lendo o project.json e carregando a mapsList
-          await projectController.openProject(templatePath);
-
+            console.warn("[App] Falha ao abrir o projeto.");
         }
-
-        // Carrega o mapa inicial e repassa para o estado do React
-        const loadedMap = projectController.getCurrentMap();
-
- 
-        if (loadedMap) {
-          setMapDataModel(loadedMap);
-        }
-      } catch (error) {
-        console.error("[App] Erro ao inicializar a sessão do editor:", error);
-      }
+    } catch (error) {
+        console.error("[App] Erro ao abrir o projeto:", error);
     }
+  };
 
-    initEditorSession();
-  }, [projectController]);
+  // Função focada em testar o fechamento do projeto
+  const handleTestCloseProject = async () => {
+    try {
+        console.log("[App] Iniciando teste de fechamento de projeto...");
+        await projectController.closeProject();
+        console.log("[App] Sucesso! Estado atual da sessão após fechar:", projectController.session);
+    } catch (error) {
+        console.error("[App] Erro ao fechar o projeto:", error);
+    }
+  };
 
   return (
-    <div className="app-container">
-      <TopMenu />
+    <div className="app-container" style={{ padding: '20px', color: '#fff' }}>
+      <h1>Testes Isolados: ProjectController</h1>
+      <p>Use os botões abaixo para testar a criação e a leitura dos arquivos de projeto.</p>
       
-      {/* Botão temporário para testar a criação do projeto */}
-      <div style={{ padding: '10px' }}>
-          <button onClick={handleTestCreateProject}>
-              Criar Novo Projeto de Teste
-          </button>
+      <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+        <button 
+          onClick={handleTestCreateProject}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
+        >
+          Testar createNewProject()
+        </button>
+
+        <button 
+          onClick={handleTestOpenProject}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', backgroundColor: '#2e7d32', color: '#fff', border: 'none' }}
+        >
+          Testar openProject()
+        </button>
+
+        <button 
+          onClick={handleTestCloseProject}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', backgroundColor: '#c62828', color: '#fff', border: 'none' }}
+        >
+          Testar closeProject()
+        </button>
       </div>
-
-      <div className="main-content">
-        <SidebarLeft 
-          className="sidebar-left" 
-          projectController={projectController}
-          editorController={editorController}
-          activeTab={activeLeftTab}
-          setActiveTab={setActiveLeftTab}
-          onSelectMap={async (mapFileName) => {
-            const index = projectController.mapsList.findIndex(m => m.name === mapFileName);
-            if (index !== -1) {
-              await projectController.loadMapByIndex(index);
-              const loadedMap = projectController.getCurrentMap();
-              if (loadedMap) {
-                setMapDataModel(new MapDataModel(loadedMap));
-              }
-            }
-          }}
-        />
-        
-        {/* Viewport agora recebe o editorController injetado */}
-        <Viewport 
-          className="viewport-container" 
-          editorController={editorController}
-          mapDataModel={mapDataModel}
-        />
-
-        <SidebarRight 
-          className="sidebar-right"
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          selectedTile={editorController.selectedTile}
-        />
-      </div>
-
-      <StatusBar 
-        className="status-bar"
-        selectedTile={editorController.selectedTile} 
-      />
     </div>
   );
 }
