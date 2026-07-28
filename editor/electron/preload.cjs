@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveJsonFile: (filePath, dataObject) => ipcRenderer.invoke('project:save-json-file', filePath, dataObject),
     loadTextFile: (filePath) => ipcRenderer.invoke('project:load-file', filePath),
     createDirectory: (dirPath) => ipcRenderer.invoke('create-directory', dirPath),
+    openDirectory: () => ipcRenderer.invoke('dialog:open-directory'),
     saveTextFile: (filePath, content) => ipcRenderer.invoke('save-text-file', filePath, content),
     copyFile: (sourcePath, destinationPath) => ipcRenderer.invoke('copy-file', sourcePath, destinationPath),
     directoryExists: (dirPath) => ipcRenderer.invoke('dir-exists', dirPath),

@@ -59,6 +59,9 @@ export default function App() {
   const projectController = projectControllerRef.current;
   const editorController = editorControllerRef.current;
 
+  // Quando o projeto terminar de carregar (ex: após o await projectController.loadProject())
+  const [activeProject, setActiveProject] = useState(false);
+
   // Estados locais para abas e componentes da UI que o React ainda precisa exibir
   const [activeLeftTab, setActiveLeftTab] = useState('maps');
   const [activeTab, setActiveTab] = useState('tilesets');
@@ -86,8 +89,9 @@ export default function App() {
           console.log("[App] Template não encontrado. Criando novo projeto padrão...");
           await projectController.createNewProject(templatePath, projectName);
         } else {
-          console.log("[App] Template já existe. Abrindo projeto existente...");
-          await projectController.openProject(templatePath);
+          //sconsole.log("[App] Template já existe. Abrindo projeto existente...");
+          //await projectController.openProject(templatePath);
+        
         }
 
         // Pega o mapa atual diretamente da nova estrutura de cache da sessão
@@ -99,6 +103,10 @@ export default function App() {
         if (currentCacheEntry && currentCacheEntry.model) {
           setMapDataModel(currentCacheEntry.model);
         }
+
+
+        //seta o projeto ativo
+        setActiveProject(true);
 
       } catch (error) {
         console.error("[App] Erro ao inicializar a sessão do editor:", error);
@@ -117,6 +125,7 @@ export default function App() {
         <SidebarLeft 
           className="sidebar-left" 
           projectController={projectController}
+          activeProject={activeProject}
           editorController={editorController}
           activeTab={activeLeftTab}
           setActiveTab={setActiveLeftTab}

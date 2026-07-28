@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import './MapsTab.css';
 
-export default function MapsTab({ projectController, onSelectMap }) {
+export default function MapsTab({ projectController, onSelectMap, activeProject }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
-
     const [mapsList, setMapsList] = useState([]);
 
-
+    // Roda exatamente quando o projeto termina de carregar ou o controller muda
     useEffect(() => {
-        if(projectController && projectController.mapManager){
+        if (projectController && projectController.mapManager) {
             setMapsList([...projectController.mapManager.mapsList]);
         }
-
-    }, [mapsList]);
+    }, [projectController, activeProject]); // <--- Dispara na hora certa
 
     const handleCreateNewMap = async () => {
         if (isCreating) return;
         setIsCreating(true);
+        
         await projectController.createNewMap();
-        setUpdateTrigger(true);
+        
+        if (projectController && projectController.mapManager) {
+            setMapsList([...projectController.mapManager.mapsList]);
+        }
+        
+        setIsCreating(false);
     };
 
     return (
@@ -57,7 +61,6 @@ export default function MapsTab({ projectController, onSelectMap }) {
                                     >
                                         <span className="map-name">🗺️ {displayName}</span>
                                         
-                                        {/* Botões de Ação no Hover */}
                                         <div className="map-actions" onClick={(e) => e.stopPropagation()}>
                                             <button 
                                                 title="Renomear" 

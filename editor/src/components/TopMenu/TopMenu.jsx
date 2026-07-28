@@ -10,7 +10,29 @@ export default function TopMenu({projectController}) {
         setActiveDropdown(activeDropdown === menuName ? null : menuName);
     };
 
-    const handleSave = async (e) => {
+    const handleOpenProject = async (e) => {
+        e.stopPropagation(); 
+        setActiveDropdown(null);
+
+        try {
+            const selectedPath = await window.electronAPI.openDirectory(); 
+            console.log("selected path: " + selectedPath);
+            if (selectedPath && projectController) {
+                console.log("[TopMenu] Pasta selecionada:", selectedPath);
+                const success = await projectController.openProject(selectedPath);
+            
+                if (success) {
+                    console.log("[TopMenu] Projeto aberto com sucesso! Forçando atualização da UI.");
+                    // Se você tiver uma função de callback passada via props para atualizar o App, chame aqui.
+                    // Ex: onProjectLoaded && onProjectLoaded();
+                }
+            }
+        } catch (error) {
+            console.error("[TopMenu] Erro ao abrir projeto:", error);
+        }
+    }
+
+    const handleSaveProject = async (e) => {
         e.stopPropagation(); //evita conflitos de fechamento de menu
         setActiveDropdown(null);
 
@@ -37,11 +59,11 @@ export default function TopMenu({projectController}) {
                         <button onClick={() => { console.log('Novo Projeto'); setActiveDropdown(null); }}>
                             Novo Projeto...
                         </button>
-                        <button onClick={() => { console.log('Abrir Projeto'); setActiveDropdown(null); }}>
+                        <button onClick={ handleOpenProject }>
                             Abrir Projeto...
                         </button>
                         <hr />
-                        <button onClick={ handleSave }>
+                        <button onClick={ handleSaveProject }>
                             Salvar
                         </button>
                     </div>

@@ -109,6 +109,13 @@ ipcMain.handle('create-directory', async (event, dirPath) => {
     }
 });
 
+ipcMain.handle('dialog:open-directory', async () => {
+    const { dialog } = require('electron');
+    const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+    if (result.canceled) return null;
+    return result.filePaths[0];
+});
+
 // Salva arquivos de texto/JSON no disco
 ipcMain.handle('save-text-file', async (event, filePath, content) => {
     try {
