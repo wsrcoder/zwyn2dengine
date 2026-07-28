@@ -1,7 +1,7 @@
 {
   "meta": {
     "version": "1.0.0",
-    "updatedAt": "2026-07-27T02:16:12.890Z"
+    "updatedAt": "2026-07-28T01:12:37.707Z"
   },
   "settings": {
     "projectName": "Default Project",
@@ -17,6 +17,13 @@
       "id": 1,
       "name": "Map0001",
       "fileName": "Map0001.json",
+      "columns": 20,
+      "rows": 15
+    },
+    {
+      "id": 2,
+      "name": "Map0002",
+      "fileName": "Map0002.json",
       "columns": 20,
       "rows": 15
     }

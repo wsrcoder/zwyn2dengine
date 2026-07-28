@@ -21,10 +21,34 @@ import './App.css';
 // 
 // 2. Implementar a lógica de Troca de Mapas (Switch Map) utilizando 
 //    a nova estrutura baseada em cache e currentId do MapManager.
+//      Toda vez que um mapa novo é criado ele já deve ser jogado na estrutura de cache
+//    se um mapa for deletado ele deve ser "escondido" na interface mas só apagado ao salvar
 // 
 // 3. Criar a lógica principal do Tab Workspace na área central (Viewport), 
 //    permitindo abrir telas secundárias em abas (como Banco de Dados, Tilesets, etc.) 
 //    em vez de usar modals bloqueantes.
+// ==========================================
+
+    // ==========================================
+// TODO LIST - REESTRUTURAÇÃO DA UI E MAPAS
+// ==========================================
+// 1. [LAYOUT] Unificar a SidebarLeft e SidebarRight em um único componente 
+//    centralizado chamado `SidebarPanel` (ou `SidebarContainer`).
+// 
+// 2. [ABAS DA SIDEBAR] Configurar a nova `SidebarPanel` com exatamente 3 abas principais:
+//    - Aba "Mapas": Para listagem e navegação de mapas do projeto.
+//    - Aba "Pintura": Dividida verticalmente (Camadas na parte superior e 
+//      Tilesets na parte inferior) para acesso simultâneo e ágil.
+//    - Aba "Eventos": Para gerenciamento e lógica de eventos do mapa.
+// 
+// 3. [LÓGICA DE MAPAS] Implementar as funções no MapManager:
+//    - `createNewMap`: Cria um novo mapa, instancia o modelo, joga direto 
+//      no cache de sessão e marca o projeto como modificado.
+//    - `deleteMap`: Realiza o "soft delete" (esconde na interface, remove do cache) 
+//      e deixa a deleção física em disco apenas para o momento de Salvar.
+// 
+// 4. [TAB WORKSPACE] Preparar a área central (Viewport) para gerenciar telas 
+//    secundárias baseadas em abas (substituindo modals bloqueantes).
 // ==========================================
 
 export default function App() {
@@ -86,7 +110,8 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <TopMenu />
+      <TopMenu 
+            projectController={projectController} />
       
       <div className="main-content">
         <SidebarLeft 

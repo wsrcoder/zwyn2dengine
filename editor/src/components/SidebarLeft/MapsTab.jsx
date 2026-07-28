@@ -3,27 +3,17 @@ import './MapsTab.css';
 
 export default function MapsTab({ projectController, onSelectMap }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
-    const [updateTrigger, setUpdateTrigger] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
 
-    const mapsList = projectController?.mapsList || [];
+    const [mapsList, setMapsList] = useState([]);
 
-    const requestUpdate = async () => {
-        if (projectController.refreshMapsList) {
-            await projectController.refreshMapsList();
-        }
-    };
 
     useEffect(() => {
-        async function handleTrigger() {
-            if (updateTrigger) {
-                await requestUpdate();
-                setUpdateTrigger(false);
-                setIsCreating(false);
-            }
+        if(projectController && projectController.mapManager){
+            setMapsList([...projectController.mapManager.mapsList]);
         }
-        handleTrigger();
-    }, [updateTrigger]);
+
+    }, [mapsList]);
 
     const handleCreateNewMap = async () => {
         if (isCreating) return;

@@ -1,14 +1,32 @@
 
 // src/components/TopMenu.jsx
 import React, { useState } from 'react';
-import './topmenu.css'; 
+import './TopMenu.css'; 
 
-export default function TopMenu() {
+export default function TopMenu({projectController}) {
     const [activeDropdown, setActiveDropdown] = useState(null);
 
     const toggleMenu = (menuName) => {
         setActiveDropdown(activeDropdown === menuName ? null : menuName);
     };
+
+    const handleSave = async (e) => {
+        e.stopPropagation(); //evita conflitos de fechamento de menu
+        setActiveDropdown(null);
+
+        if(!projectController){
+            console.warn("[TopMenu] projectController não disponivel.");
+            return;
+        }
+
+        try{
+            console.log("[TopMenu] Acionando salvamento do projeto...");
+            await projectController.saveProject();
+            console.log("[TopMenu] Projeto salvo com sucesso.")
+        }catch(error){
+            console.error("[TopMenu] Erro ao salvar o projeto", error);
+        }
+    }
 
     return (
         <div className="top-menu">
@@ -23,7 +41,7 @@ export default function TopMenu() {
                             Abrir Projeto...
                         </button>
                         <hr />
-                        <button onClick={() => { console.log('Salvar'); setActiveDropdown(null); }}>
+                        <button onClick={ handleSave }>
                             Salvar
                         </button>
                     </div>
@@ -34,8 +52,8 @@ export default function TopMenu() {
                 <span>Editar</span>
                 {activeDropdown === 'edit' && (
                     <div className="dropdown-content">
-                        <button>Desfazer</button>
-                        <button>Refazer</button>
+                        <button onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}>Desfazer</button>
+                        <button onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}>Refazer</button>
                     </div>
                 )}
             </div>
@@ -44,7 +62,7 @@ export default function TopMenu() {
                 <span>Visualizar</span>
                 {activeDropdown === 'view' && (
                     <div className="dropdown-content">
-                        <button>Alternar Grid</button>
+                        <button onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}>Alternar Grid</button>
                     </div>
                 )}
             </div>

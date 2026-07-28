@@ -125,7 +125,7 @@ export class ProjectController {
 
         // 5. Define o mapa criado como o mapa atual na sessão (via cache)
         this.session.map.cache.set(initialMapModel.id, {
-            model: initialMapModel,
+            mapDataModel: initialMapModel,
             fileName: firstMap.fileName,
             isModified: false
         });
@@ -191,11 +191,12 @@ export class ProjectController {
             
             if (result && result.mapModel) {
                 // Insere o primeiro mapa no cache usando o padrão novo
-                this.session.map.cache.set(firstMapMeta.id, {
-                    model: result.mapModel,
-                    fileName: firstMapMeta.fileName,
-                    isModified: false
-                });
+
+                this.session.map.cache.set(firstMapMeta.id,{
+                                            mapDataModel: result.mapModel,
+                                             fileName: firstMapMeta.fileName,
+                                            isModified: true
+                                    });
 
                 // Define o ID atual
                 this.session.map.currentId = firstMapMeta.id;
@@ -255,6 +256,8 @@ export class ProjectController {
     // 2. Um novo mapa for criado (ele já deve ser inserido diretamente no cache).
     // 3. Uma nova camada for adicionada a um mapa.
     // Ajustar essa sincronização à medida que o editor continuar evoluindo.
+
+
     async saveProject() {
         if (!this.session.project.path || !this.session.project.data) {
             console.error("[ProjectController] Nenhum projeto aberto para salvar.");
@@ -274,7 +277,7 @@ export class ProjectController {
                     // O fileName já está guardado junto, zero buscas necessárias!
                     const mapFilePath = `${projectPath}/Data/Maps/${cacheEntry.fileName}`;
                 
-                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(cacheEntry.model.toJSON());
+                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(cacheEntry.mapDataModel.toJSON());
                     await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
                 
                     cacheEntry.isModified = false;
@@ -289,7 +292,12 @@ export class ProjectController {
             this.session.map.cache.clear();
 
             if (currentEntry) {
-                this.session.map.cache.set(currentId, currentEntry);
+                
+                this.session.map.cache.set(currentId,{
+                                            mapDataModel: currentEntry,
+                                            fileName: currentEntry.fileName,
+                                            isModified: true
+                                    });
             }
 
             this.session.project.isModified = false;
@@ -303,54 +311,23 @@ export class ProjectController {
     }
 
 
-
-
-    async createNewMap() {
-        try {
-            // 1. Pede para o MapManager gerar a nova estrutura limpa
-            const newMapItem = this.mapManager.createNewMap();
-            newMapItem.dirPath = `${this.projectPath}/Data/Maps`;
-
-            // 2. Montar a estrutura Json padrão do novo mapa baseada no modelo novo
-            const defaultRawMap = {
-                id: newMapItem.id,
-                name: newMapItem.name,
-                columns: newMapItem.width,
-                rows: newMapItem.height,
-                tile: { width: 32, height: 32 },
-                orientation: "orthogonal",
-                renderorder: "right-down",
-                tilesets: [
-                    {
-                        firstgid: 1,
-                        name: "TLS0000001",
-                        columns: 32,
-                        rows: 32,
-                        image: { name: "TLS0000001.png", width: 1024, height: 1024 },
-                        tile: { width: 32, height: 32, count: 1024 },
-                        meta: {}
-                    }
-                ],
-                backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }],
-                mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }],
-                eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }],
-                UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: newMapItem.width, rows: newMapItem.height, data: new Array(newMapItem.width * newMapItem.height).fill(0) }]
-            };
-
-            const newMapData = new MapDataModel(defaultRawMap);
-            const mapJsonString = JsonUtils.stringifyWithCompactArrays(newMapData.toJSON());
-
-            // 3. Salva o arquivo físico no disco
-            await window.electronAPI.saveTextFile(`${newMapItem.dirPath}/${newMapItem.fileName}`, mapJsonString);
-
-            // 4. Atualiza o arquivo project.json global
-            await this.saveProjectInfo();
-
-            console.log("[ProjectController] Novo mapa criado com sucesso:", newMapItem.name);
-            return newMapData;
-        } catch(error) {
-            console.error("[ProjectController] Erro ao criar novo mapa:", error);
+    /**
+     * Atalho para criar um novo mapa através do MapManager, mantendo o controle da sessão centralizado.
+     */
+    async createNewMap(columns = 20, rows = 15) {
+        if (!this.mapManager || !this.session) {
+            console.error("[ProjectController] MapManager ou Sessão não inicializados.");
             return null;
         }
+
+        // Delega a criação para o MapManager, passando a sessão atual
+        const result = this.mapManager.createNewMap(this.session, columns, rows);
+        
+        if (result) {
+            // Se precisar disparar algum save automático do project.json ou atualizar listeners da UI, faz aqui.
+            console.log("[ProjectController] Novo mapa criado via atalho do MapManager.");
+        }
+
+        return result;
     }
 }
