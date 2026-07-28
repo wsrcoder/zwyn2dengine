@@ -1,17 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import './MapsTab.css';
 
-export default function MapsTab({ projectController, onSelectMap, activeProject }) {
+export default function MapsTab({ projectController, uiController, onSelectMap }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
     const [mapsList, setMapsList] = useState([]);
 
-    // Roda exatamente quando o projeto termina de carregar ou o controller muda
     useEffect(() => {
-        if (projectController && projectController.mapManager) {
-            setMapsList([...projectController.mapManager.mapsList]);
-        }
-    }, [projectController, activeProject]); // <--- Dispara na hora certa
+        if (!uiController || !projectController) return;
+
+        const updateMaps = () => {
+            if (projectController.mapManager && projectController.mapManager.mapsList) {
+                const list = projectController.mapManager.mapsList;
+                console.log("[MapsTab] Mapas encontrados no MapManager:", list);
+                setMapsList([...list]);
+            }
+        };
+
+        // Tenta carregar caso o projeto já estivesse aberto antes de montar a aba
+        updateMaps();
+
+        // Se inscreve no evento do UIController
+        const unsubscribe = uiController.subscribe('projectLoaded', () => {
+            console.log("[MapsTab] Evento 'projectLoaded' recebido! Atualizando lista...");
+            updateMaps();
+        });
+
+        const unsubscribeMaps = uiController.subscribe('mapsListUpdated', updateMaps);
+
+        return () => {
+            unsubscribe();
+            unsubscribeMaps();
+        };
+    }, [uiController, projectController]);
 
     const handleCreateNewMap = async () => {
         if (isCreating) return;
@@ -19,8 +40,11 @@ export default function MapsTab({ projectController, onSelectMap, activeProject 
         
         await projectController.createNewMap();
         
-        if (projectController && projectController.mapManager) {
+        if (projectController.mapManager) {
             setMapsList([...projectController.mapManager.mapsList]);
+        }
+        if (uiController) {
+            uiController.notifyListeners('mapsListUpdated');
         }
         
         setIsCreating(false);
@@ -49,9 +73,10 @@ export default function MapsTab({ projectController, onSelectMap, activeProject 
                         
                         <ul className="sidebar-list">
                             {mapsList.map((mapItem, idx) => {
-                                const fileName = mapItem.name || mapItem;
-                                const displayName = fileName.replace('.json', '');
-                                const isSelected = projectController.currentMapData?.name === displayName;
+                                // Proteção para extrair o nome corretamente independente da estrutura do objeto
+                                const fileName = mapItem.fileName || mapItem.name || mapItem;
+                                const displayName = typeof fileName === 'string' ? fileName.replace('.json', '') : `Mapa ${idx + 1}`;
+                                const isSelected = projectController?.getCurrentMap()?.name === displayName;
 
                                 return (
                                     <li 
@@ -62,18 +87,8 @@ export default function MapsTab({ projectController, onSelectMap, activeProject 
                                         <span className="map-name">🗺️ {displayName}</span>
                                         
                                         <div className="map-actions" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                                title="Renomear" 
-                                                onClick={() => console.log("Renomear", fileName)}
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button 
-                                                title="Excluir" 
-                                                onClick={() => console.log("Excluir", fileName)}
-                                            >
-                                                🗑️
-                                            </button>
+                                            <button title="Renomear" onClick={() => console.log("Renomear", fileName)}>✏️</button>
+                                            <button title="Excluir" onClick={() => console.log("Excluir", fileName)}>🗑️</button>
                                         </div>
                                     </li>
                                 );

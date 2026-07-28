@@ -2,14 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { MapRenderer } from '../../renderers/MapRenderer';
 import './Viewport.css';
 
-export default function Viewport({ editorController, mapDataModel }) {
+export default function Viewport({ uiController, mapDataModel }) {
     const canvasRef = useRef(null);
     const mapRendererRef = useRef(null);
     const tilesetImagesRef = useRef({}); // Cache para evitar recarregar imagens toda vez
 
     // 1. Inicializa o MapRenderer e vincula ao Controller uma única vez
     useEffect(() => {
-        if (!canvasRef.current || !editorController) return;
+        if (!canvasRef.current || !uiController) return;
 
         const columns = mapDataModel?.columns || 20;
         const rows = mapDataModel?.rows || 15;
@@ -17,10 +17,10 @@ export default function Viewport({ editorController, mapDataModel }) {
 
         const renderer = new MapRenderer(canvasRef.current, columns, rows, tileWidth);
         mapRendererRef.current = renderer;
-        editorController.setMapRenderer(renderer);
+        uiController.setMapRenderer(renderer);
 
         // Inscreve-se para escutar atualizações do mapa vindas do controller
-        const unsubscribe = editorController.subscribe('mapUpdated', (updatedMap) => {
+        const unsubscribe = uiController.subscribe('mapUpdated', (updatedMap) => {
             if (mapRendererRef.current) {
                 mapRendererRef.current.updateMapData(updatedMap);
                 mapRendererRef.current.render();
@@ -30,13 +30,13 @@ export default function Viewport({ editorController, mapDataModel }) {
         return () => {
             unsubscribe();
         };
-    }, [editorController]);
+    }, [uiController]);
 
     // 2. Gerencia o carregamento das imagens dos tilesets (Apenas quando o mapa/tilesets mudam de fato)
     useEffect(() => {
         if (!mapRendererRef.current || !mapDataModel) return;
 
-        const activeLayer = editorController ? editorController.activeLayer : { category: 'mapLayers', index: 0 };
+        const activeLayer = uiController ? uiController.activeLayer : { category: 'mapLayers', index: 0 };
         mapRendererRef.current.updateMapData(mapDataModel, activeLayer, true);
 
         if (!mapDataModel.tilesets || mapDataModel.tilesets.length === 0) {
@@ -75,13 +75,13 @@ export default function Viewport({ editorController, mapDataModel }) {
 
     // 3. Tratamento de cliques e pintura
     const handleCanvasClick = (event) => {
-        if (!mapRendererRef.current || !editorController) return;
+        if (!mapRendererRef.current || !uiController) return;
 
         const clickData = mapRendererRef.current.handleClickEvent(event);
 
         if (clickData.isOutOfBounds) return;
 
-        editorController.paintTile(clickData.tileX, clickData.tileY);
+        uiController.paintTile(clickData.tileX, clickData.tileY);
     };
 
     return (

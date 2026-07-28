@@ -29,6 +29,14 @@ export class ProjectController {
         return this.mapManager ? this.mapManager.getMaps() : [];
     }
 
+    getCurrentMap() {
+        const currentId = this.session?.map?.currentId;
+        if (!currentId) return null;
+    
+        const cacheEntry = this.session.map.cache.get(currentId);
+        return cacheEntry ? cacheEntry.mapDataModel : null; // ou o dado correspondente do mapa
+    }
+
 
     async createNewProject(projectRootPath, projectName) {
         const normalizedPath = projectRootPath.replace(/\\/g,'/');

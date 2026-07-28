@@ -2,7 +2,7 @@
 import { LayerType } from "../constants/LayerType";
 import { LayerBucketMap } from "../constants/LayerBucketMap";
 
-export class EditorController {
+export class UIController {
     constructor() {
         // Referências principais
         this.projectController = null;
@@ -171,8 +171,12 @@ export class EditorController {
     }
 
     notifyListeners(event, data) {
+        console.log(`[UIController] Evento disparado: "${event}", com dados:`, data);
         if (this.listeners[event]) {
+            console.log(`[UIController] Encontrados ${this.listeners[event].length} ouvintes para o evento ${event}.`);
             this.listeners[event].forEach(callback => callback(data));
+        } else {
+            console.warn(`[UIController] Nenhum ouvinte registrado para o evento: "${event}"`);
         }
     }
 }

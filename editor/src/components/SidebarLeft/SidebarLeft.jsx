@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MapsTab from './MapsTab';
 import { LayerType } from '../../Constants/LayerType.js';
 import { LayerBucketMap } from '../../Constants/LayerBucketMap.js';
@@ -6,17 +6,37 @@ import './SidebarLeft.css';
 
 export default function SidebarLeft({ 
     projectController, 
-    editorController, 
+    uiController, 
     onSelectMap,
     activeTab,
     setActiveTab 
 }) {
     const [expandedLayers, setExpandedLayers] = useState(true);
-    const activeLayer = editorController?.activeLayer || { category: 'mapLayers', index: 0 };
-    
-    // Pega o mapa atual diretamente do cache via editorController
-    const currentMap = editorController ? editorController.getCurrentMap() : null;
+    const [, setRenderTrigger] = useState(0); // Estado gatilho para forçar o React a re-renderizar
 
+    useEffect(() => {
+        if (!uiController) return;
+
+        const handleRefreshUI = () => {
+            console.log("[SidebarLeft] Atualizando painel de camadas e mapas...");
+            setRenderTrigger(prev => prev + 1); // Força um novo ciclo de renderização
+        };
+
+        // Escuta os eventos globais do editor
+        const unsubProject = uiController.subscribe('projectLoaded', handleRefreshUI);
+        const unsubMapChanged = uiController.subscribe('mapChanged', handleRefreshUI);
+        const unsubMapsList = uiController.subscribe('mapsListUpdated', handleRefreshUI);
+
+        return () => {
+            unsubProject();
+            unsubMapChanged();
+            unsubMapsList();
+        };
+    }, [uiController]);
+
+    const currentMap = projectController?.getCurrentMap ? projectController.getCurrentMap() : null;
+    const activeLayer = uiController?.activeLayer || { category: 'mapLayers', index: 0 };
+    
     return (
         <div className="sidebar-left">
             {/* Cabeçalho de Abas da Sidebar Esquerda */}
@@ -40,6 +60,7 @@ export default function SidebarLeft({
                 {activeTab === 'maps' && (
                     <MapsTab 
                         projectController={projectController} 
+                        uiController={uiController}
                         onSelectMap={onSelectMap} 
                     />
                 )}
@@ -64,7 +85,7 @@ export default function SidebarLeft({
                                         <div 
                                             key={`bg-${index}`}
                                             className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.BACKGROUND] && activeLayer.index === index ? 'selected' : ''}`}
-                                            onClick={() => editorController?.setActiveLayer(LayerType.BACKGROUND, index)}
+                                            onClick={() => uiController?.setActiveLayer(LayerType.BACKGROUND, index)}
                                         >
                                             <span>🌄 {layer.name}</span>
                                             <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
@@ -79,7 +100,7 @@ export default function SidebarLeft({
                                         <div 
                                             key={`map-${index}`}
                                             className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.TILE] && activeLayer.index === index ? 'selected' : ''}`}
-                                            onClick={() => editorController?.setActiveLayer(LayerType.TILE, index)}
+                                            onClick={() => uiController?.setActiveLayer(LayerType.TILE, index)}
                                         >
                                             <span>🧱 {layer.name}</span>
                                             <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>
@@ -94,7 +115,7 @@ export default function SidebarLeft({
                                         <div 
                                             key={`evt-${index}`}
                                             className={`layer-item ${activeLayer.category === LayerBucketMap[LayerType.EVENT] && activeLayer.index === index ? 'selected' : ''}`}
-                                            onClick={() => editorController?.setActiveLayer(LayerType.EVENT, index)}
+                                            onClick={() => uiController?.setActiveLayer(LayerType.EVENT, index)}
                                         >
                                             <span>⚡ {layer.name}</span>
                                             <span className="layer-visibility">{layer.visible ? '👁️' : '🚫'}</span>

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import './TopMenu.css'; 
 
-export default function TopMenu({projectController}) {
+export default function TopMenu({projectController, uiController}) {
     const [activeDropdown, setActiveDropdown] = useState(null);
 
     const toggleMenu = (menuName) => {
@@ -25,6 +25,10 @@ export default function TopMenu({projectController}) {
                     console.log("[TopMenu] Projeto aberto com sucesso! Forçando atualização da UI.");
                     // Se você tiver uma função de callback passada via props para atualizar o App, chame aqui.
                     // Ex: onProjectLoaded && onProjectLoaded();
+                }
+
+                if (uiController) {
+                    uiController.notifyListeners('projectLoaded', projectController.session);
                 }
             }
         } catch (error) {

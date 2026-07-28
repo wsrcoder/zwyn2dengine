@@ -6,7 +6,7 @@ import SidebarRight from './components/SidebarRight/SidebarRight.jsx';
 import StatusBar from './components/StatusBar';
 
 import { ProjectController } from './controllers/ProjectController.js';
-import { EditorController } from './controllers/EditorController.js';
+import { UIController } from './controllers/UIController.js';
 
 import { MapDataModel } from './models/MapDataModel/MapDataModel.js';
 
@@ -29,7 +29,7 @@ import './App.css';
 //    em vez de usar modals bloqueantes.
 // ==========================================
 
-    // ==========================================
+// ==========================================
 // TODO LIST - REESTRUTURAÇÃO DA UI E MAPAS
 // ==========================================
 // 1. [LAYOUT] Unificar a SidebarLeft e SidebarRight em um único componente 
@@ -54,15 +54,15 @@ import './App.css';
 export default function App() {
   // Instancia os controladores globais usando refs para persistirem durante o ciclo de vida
   const projectControllerRef = useRef(new ProjectController());
-  const editorControllerRef = useRef(new EditorController());
+  const uiControllerRef = useRef(new UIController());
   
   const projectController = projectControllerRef.current;
-  const editorController = editorControllerRef.current;
+  const uiController = uiControllerRef.current;
 
-  // Quando o projeto terminar de carregar (ex: após o await projectController.loadProject())
+  // Quando o projeto terminar de carregar
   const [activeProject, setActiveProject] = useState(false);
 
-  // Estados locais para abas e componentes da UI que o React ainda precisa exibir
+  // Estados locais para abas e componentes da UI que o React precisa exibir
   const [activeLeftTab, setActiveLeftTab] = useState('maps');
   const [activeTab, setActiveTab] = useState('tilesets');
 
@@ -71,75 +71,50 @@ export default function App() {
   // Estado que alimenta a Viewport com o modelo do mapa atual
   const [mapDataModel, setMapDataModel] = useState(null);
 
-  // Vincula o ProjectController ao EditorController na montagem inicial
   useEffect(() => {
-    editorController.setProjectController(projectController);
-  }, [projectController, editorController]);
+    // Vincula a referência cruzada dos controllers logo na montagem
+    uiController.setProjectController(projectController);
 
-  useEffect(() => {
-    async function initEditorSession() {
-      const templatePath = "D:/projects/2026/zwyn2dengine/Editor/templates/default-project";
-      const projectName = "Default Project";
+    // Escuta os eventos disparados pelo UIController quando um projeto é carregado pelo TopMenu
+    const unsubscribe = uiController.subscribe('projectLoaded', () => {
+      const currentId = projectController.session.map.currentId;
+      const currentCacheEntry = projectController.session.map.cache.get(currentId);
 
-      try {
-        // Verifica se o diretório do template já existe
-        const projectExists = await window.electronAPI.directoryExists(templatePath);
-
-        if (!projectExists) {
-          console.log("[App] Template não encontrado. Criando novo projeto padrão...");
-          await projectController.createNewProject(templatePath, projectName);
-        } else {
-          //sconsole.log("[App] Template já existe. Abrindo projeto existente...");
-          //await projectController.openProject(templatePath);
-        
-        }
-
-        // Pega o mapa atual diretamente da nova estrutura de cache da sessão
-        const currentId = projectController.session.map.currentId;
-        const currentCacheEntry = projectController.session.map.cache.get(currentId);
-
-        
-
-        if (currentCacheEntry && currentCacheEntry.model) {
-          setMapDataModel(currentCacheEntry.model);
-        }
-
-
-        //seta o projeto ativo
-        setActiveProject(true);
-
-      } catch (error) {
-        console.error("[App] Erro ao inicializar a sessão do editor:", error);
+      if (currentCacheEntry && currentCacheEntry.mapDataModel) {
+        setMapDataModel(currentCacheEntry.mapDataModel);
       }
-    }
+      setActiveProject(true);
+    });
 
-    initEditorSession();
-  }, [projectController]);
+    return () => {
+      unsubscribe();
+    };
+  }, [projectController, uiController]);
 
   return (
     <div className="app-container">
       <TopMenu 
-            projectController={projectController} />
+        projectController={projectController} 
+        uiController={uiController}
+      />
       
       <div className="main-content">
         <SidebarLeft 
           className="sidebar-left" 
           projectController={projectController}
-          activeProject={activeProject}
-          editorController={editorController}
+          uiController={uiController}
           activeTab={activeLeftTab}
           setActiveTab={setActiveLeftTab}
           onSelectMap={async (mapId) => {
             // Garante que o mapa está no cache (carrega do disco se necessário)
             const mapModel = await projectController.mapManager.fetchMapDataById ? 
-              // Se usarmos ID ou índice:
               null : null; 
           }}
         />
         
         <Viewport 
           className="viewport-container" 
-          editorController={editorController}
+          uiController={uiController}
           mapDataModel={mapDataModel}
         />
 
@@ -147,13 +122,13 @@ export default function App() {
           className="sidebar-right"
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          selectedTile={editorController.selectedTile}
+          selectedTile={uiController.selectedTile}
         />
       </div>
 
       <StatusBar 
         className="status-bar"
-        selectedTile={editorController.selectedTile} 
+        selectedTile={uiController.selectedTile} 
       />
     </div>
   );
