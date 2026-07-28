@@ -7,7 +7,6 @@ import './SidePanel.css';
 export default function SidePanel({ 
     projectController, 
     uiController, 
-    onSelectMap,
     activeTab,
     setActiveTab 
 }) {
@@ -24,7 +23,7 @@ export default function SidePanel({
         // Escuta os eventos globais do editor
         const unsubProject = uiController.subscribe('projectLoaded', handleRefreshUI);
         const unsubMapChanged = uiController.subscribe('mapChanged', handleRefreshUI);
-        const unsubMapsList = uiController.subscribe('mapsListUpdated', handleRefreshUI);
+        const unsubMapsList = uiController.subscribe('worldsListUpdated', handleRefreshUI);
 
         return () => {
             unsubProject();
@@ -57,7 +56,6 @@ export default function SidePanel({
                     <WorldsTab 
                         projectController={projectController} 
                         uiController={uiController}
-                        onSelectMap={onSelectMap} 
                     />
                 )}
 

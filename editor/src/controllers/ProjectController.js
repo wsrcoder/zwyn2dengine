@@ -37,6 +37,81 @@ export class ProjectController {
         return cacheEntry ? cacheEntry.mapDataModel : null; // ou o dado correspondente do mapa
     }
 
+    /**
+     * Define o mapa ativo atual do projeto.
+     * 
+     * Por que fizemos isso?
+     * 1. Sistema de Cache (Lazy Loading): Evitamos carregar todos os mapas do projeto na memória de uma só vez. 
+     *    Primeiro verificamos se o mapa já está no `this.session.map.cache`.
+     * 2. Busca sob demanda: Se o mapa ainda não estiver em memória, localizamos os metadados dele via 
+     *    `mapManager`, lemos o arquivo do disco de forma assíncrona, injetamos no cache e só então 
+     *    atualizamos o ponteiro `currentId`.
+     * 3. Reatividade: Isso permite que a troca de mapas pela interface (`WorldsTab`) funcione perfeitamente 
+     *    sob demanda, mantendo os dados sincronizados com a UI.
+     */
+    async setCurrentMap(mapId) {
+        if (!mapId) {
+            console.warn("[ProjectController] Tentativa de definir um mapId inválido.");
+            return false;
+        }
+
+        if (!this.session) {
+            this.session = {};
+        }
+        if (!this.session.map) {
+            this.session.map = { currentId: null, cache: new Map() };
+        }
+
+        // 1. Se o mapa já estiver no cache, basta atualizar o currentId
+        if (this.session.map.cache.has(mapId)) {
+            this.session.map.currentId = mapId;
+            console.log(`[ProjectController] Mapa atual alternado (via cache) para o ID: ${mapId}`);
+            return true;
+        }
+
+        // 2. Se não estiver no cache, precisamos encontrá-lo na lista do MapManager e carregar do disco
+        if (!this.mapManager || typeof this.mapManager.getMaps !== 'function') {
+            console.error("[ProjectController] MapManager não inicializado.");
+            return false;
+        }
+
+        const allMaps = this.mapManager.getMaps();
+        const mapMetaIndex = allMaps.findIndex(m => m.id === mapId || m.fileName === mapId);
+
+        if (mapMetaIndex === -1) {
+            console.error(`[ProjectController] Metadados do mapa com ID/FileName '${mapId}' não foram encontrados.`);
+            return false;
+        }
+
+        const mapMeta = allMaps[mapMetaIndex];
+        console.log(`[ProjectController] Mapa '${mapId}' não está em cache. Carregando do disco...`);
+
+        try {
+            // Busca os dados do mapa no disco usando o MapManager (seguindo o mesmo padrão do openProject)
+            const result = await this.mapManager.fetchMapDataByIndex(mapMetaIndex, this.session.project.path);
+
+            if (result && result.mapModel) {
+                // Insere no cache da sessão
+                this.session.map.cache.set(mapMeta.id, {
+                    mapDataModel: result.mapModel,
+                    fileName: mapMeta.fileName,
+                    isModified: false
+                });
+
+                // Define o ID atual
+                this.session.map.currentId = mapMeta.id;
+                console.log(`[ProjectController] Mapa carregado do disco e adicionado ao cache com sucesso.`);
+                return true;
+            } else {
+                console.error(`[ProjectController] Falha ao ler os dados do mapa do disco para o índice ${mapMetaIndex}.`);
+                return false;
+            }
+        } catch (error) {
+            console.error(`[ProjectController] Erro crítico ao carregar mapa do disco:`, error);
+            return false;
+        }
+    }
+
 
     async createNewProject(projectRootPath, projectName) {
         const normalizedPath = projectRootPath.replace(/\\/g,'/');
