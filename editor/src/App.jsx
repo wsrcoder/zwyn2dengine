@@ -4,6 +4,8 @@ import SidePanel from './components/SidePanel/SidePanel.jsx';
 import Viewport from './components/Viewport/Viewport.jsx';
 import StatusBar from './components/StatusBar';
 
+import ModalRoot from './ui/modals/ModalRoot.jsx';
+
 import { ProjectController } from './controllers/ProjectController.js';
 import { UIController } from './controllers/UIController.js';
 
@@ -12,16 +14,39 @@ import { MapDataModel } from './models/MapDataModel/MapDataModel.js';
 import './index.css';
 import './App.css';
 
+/**
+ * ============================================================================
+ * TODO: Sistema de Modais Global e Reutilizável (src/ui/modal/)
+ * ============================================================================
+ * 
+ * [ ] 1. Estrutura de Arquivos e Estilos
+ *     - [ ] Criar a pasta src/ui/modal/ e os arquivos Modal.jsx e Modal.css
+ *     - [ ] Integrar o Modal.css com as variáveis globais de design (src/ui/styles/variables.css)
+ * 
+ * [ ] 2. Componente Base do Modal (Casca Visual)
+ *     - [ ] Estruturar o layout padrão: Backdrop, Janela, Header (Título + Fechar), Body, Footer
+ *     - [ ] Garantir acessibilidade básica e fechamento via tecla ESC ou clique fora
+ * 
+ * [ ] 3. Implementar a API Estática baseada em Promises (Modal Controller)
+ *     - [ ] Modal.alert()   -> Alerta informativo simples (Botão OK)
+ *     - [ ] Modal.confirm() -> Confirmação binária de ações críticas (Sim/Não ou Cancelar/Confirmar)
+ *     - [ ] Modal.prompt()  -> Entrada rápida de texto/dados (Input + Cancelar/Salvar)
+ *     - [ ] Modal.loading() -> Tela de bloqueio e progresso para operações pesadas assíncronas
+ *     - [ ] Modal.custom()  -> Container genérico para formulários e telas complexas
+ * 
+ * [ ] 4. Testes de Integração e Uso no Editor
+ *     - [ ] Substituir alerts nativos do navegador ou logs críticos pelas novas chamadas do Modal
+ *     - [ ] Validar o fluxo assíncrono (async/await) nos controllers da aplicação
+ * ============================================================================
+ */
+
 // ==========================================
 // TODO LIST - PRÓXIMOS PASSOS DO EDITOR
 // ==========================================
 // 1. [ALTA PRIORIDADE] Implementar o redimensionamento arrastável (Resizer) 
 //    para a Sidebar Right e Sidebar Left, permitindo customizar a largura da UI.
 // 
-// 2. Implementar a lógica de Troca de Mapas (Switch Map) utilizando 
-//    a nova estrutura baseada em cache e currentId do MapManager.
-//      Toda vez que um mapa novo é criado ele já deve ser jogado na estrutura de cache
-//    se um mapa for deletado ele deve ser "escondido" na interface mas só apagado ao salvar
+
 // 
 // 3. Criar a lógica principal do Tab Workspace na área central (Viewport), 
 //    permitindo abrir telas secundárias em abas (como Banco de Dados, Tilesets, etc.) 
@@ -30,9 +55,7 @@ import './App.css';
 
 // ==========================================
 // TODO LIST - REESTRUTURAÇÃO DA UI E MAPAS
-// ==========================================
-// 1. [LAYOUT] Unificar a SidebarLeft e SidebarRight em um único componente 
-//    centralizado chamado `SidebarPanel` (ou `SidebarContainer`).
+
 // 
 // 2. [ABAS DA SIDEBAR] Configurar a nova `SidebarPanel` com exatamente 3 abas principais:
 //    - Aba "Mapas": Para listagem e navegação de mapas do projeto.
@@ -92,6 +115,7 @@ export default function App() {
 
   return (
     <div className="app-container">
+      <ModalRoot />
       <TopMenu 
         projectController={projectController} 
         uiController={uiController}

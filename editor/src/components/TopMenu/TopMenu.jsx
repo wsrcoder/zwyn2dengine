@@ -1,6 +1,7 @@
 
 // src/components/TopMenu.jsx
 import React, { useState } from 'react';
+import { Modal } from '../../ui/modals/Modal';
 import './TopMenu.css'; 
 
 export default function TopMenu({projectController, uiController}) {
@@ -25,14 +26,26 @@ export default function TopMenu({projectController, uiController}) {
                     console.log("[TopMenu] Projeto aberto com sucesso! Forçando atualização da UI.");
                     // Se você tiver uma função de callback passada via props para atualizar o App, chame aqui.
                     // Ex: onProjectLoaded && onProjectLoaded();
+
+                    
                 }
 
                 if (uiController) {
                     uiController.notifyListeners('projectLoaded', projectController.session);
                 }
+
+                //await Modal.alert(
+                //        "Projeto Carregado", 
+                //        `O projeto "${projectController.session.project.data.settings.projectName}" foi aberto com sucesso!`
+                //    );
             }
         } catch (error) {
             console.error("[TopMenu] Erro ao abrir projeto:", error);
+
+            await Modal.alert(
+                        "Erro de carregamento", 
+                        `O projeto não foi aberto. Verifique se o diretório é um diretório válido criado ZwyinEngine...`
+                    );
         }
     }
 
