@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import './MapsTab.css';
+import './WorldsTab.css';
 
-export default function MapsTab({ projectController, uiController, onSelectMap }) {
+export default function WorldsTab({ projectController, uiController, onSelectMap }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
     const [mapsList, setMapsList] = useState([]);

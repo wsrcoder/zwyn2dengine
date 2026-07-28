@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import MapsTab from './MapsTab';
+import WorldsTab from './WorldsTab/WorldsTab.jsx';
 import { LayerType } from '../../Constants/LayerType.js';
 import { LayerBucketMap } from '../../Constants/LayerBucketMap.js';
-import './SidebarLeft.css';
+import './SidePanel.css';
 
-export default function SidebarLeft({ 
+export default function SidePanel({ 
     projectController, 
     uiController, 
     onSelectMap,
@@ -58,7 +58,7 @@ export default function SidebarLeft({
             {/* Conteúdo Dinâmico Baseado na Aba Ativa */}
             <div className="sidebar-tab-content">
                 {activeTab === 'maps' && (
-                    <MapsTab 
+                    <WorldsTab 
                         projectController={projectController} 
                         uiController={uiController}
                         onSelectMap={onSelectMap} 

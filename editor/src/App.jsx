@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TopMenu from './components/TopMenu/TopMenu';
-import SidebarLeft from './components/SidebarLeft/SidebarLeft.jsx';
+import SidePanel from './components/SidePanel/SidePanel.jsx';
 import Viewport from './components/Viewport/Viewport.jsx';
-import SidebarRight from './components/SidebarRight/SidebarRight.jsx';
 import StatusBar from './components/StatusBar';
 
 import { ProjectController } from './controllers/ProjectController.js';
@@ -99,7 +98,7 @@ export default function App() {
       />
       
       <div className="main-content">
-        <SidebarLeft 
+        <SidePanel 
           className="sidebar-left" 
           projectController={projectController}
           uiController={uiController}
@@ -118,12 +117,6 @@ export default function App() {
           mapDataModel={mapDataModel}
         />
 
-        <SidebarRight 
-          className="sidebar-right"
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          selectedTile={uiController.selectedTile}
-        />
       </div>
 
       <StatusBar 
