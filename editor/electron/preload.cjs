@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     copyFile: (sourcePath, destinationPath) => ipcRenderer.invoke('copy-file', sourcePath, destinationPath),
     directoryExists: (dirPath) => ipcRenderer.invoke('dir-exists', dirPath),
     fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),
+    quit: () => ipcRenderer.invoke('app:quit'),
 });

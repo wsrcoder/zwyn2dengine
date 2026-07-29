@@ -1,62 +1,95 @@
-
 /* src/components/TopMenu.css */
-.top-menu {
-    display: flex;
-    background-color: #1e1e1e;
-    color: #cccccc;
-    height: 30px;
-    align-items: center;
-    padding: 0 10px;
+
+
+@import "../../ui/styles/variables.css";
+
+.top-menu-container {
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-family: inherit;
     font-size: 13px;
-    font-family: sans-serif;
     user-select: none;
-    border-bottom: 1px solid #2d2d2d;
-    position: relative;
-    z-index: 1000;
+    width: 100%;
 }
 
-.menu-item {
+.top-menu-nav {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    height: 30px;
+}
+
+/* Dropdown Container */
+.top-menu-dropdown {
     position: relative;
-    padding: 4px 10px;
+    display: inline-block;
+}
+
+/* Botão Principal do Menu (ex: "Arquivo") */
+.top-menu-trigger {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    padding: 4px 8px;
+    border-radius: 3px;
     cursor: pointer;
-    border-radius: 4px;
+    font-size: 13px;
 }
 
-.menu-item:hover {
-    background-color: #2a2d2e;
+.top-menu-trigger:hover,
+.top-menu-dropdown:hover .top-menu-trigger {
+    background-color: var(--bg-hover);
     color: #ffffff;
 }
 
-.dropdown-content {
+/* Caixa de Conteúdo do Dropdown (Oculta por padrão, aparece no hover) */
+.top-menu-dropdown-content {
+    display: none;
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: #252526;
-    border: 1px solid #454545;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    min-width: 160px;
-    display: flex;
-    flex-direction: column;
+    background-color: var(--bg-secondary);
+    min-width: 180px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     padding: 4px 0;
+    z-index: 1000;
 }
 
-.dropdown-content button {
-    background: none;
-    border: none;
-    color: #cccccc;
+/* Mostra o menu suspenso ao passar o mouse */
+.top-menu-dropdown:hover .top-menu-dropdown-content {
+    display: block;
+}
+
+/* Itens individuais do menu */
+.top-menu-item {
+    display: block;
+    width: 100%;
     text-align: left;
-    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    padding: 6px 16px;
     font-size: 13px;
     cursor: pointer;
+    white-space: nowrap;
 }
 
-.dropdown-content button:hover {
-    background-color: #094771;
+.top-menu-item:hover {
+    background-color: var(--accent-color);
     color: #ffffff;
 }
 
-.dropdown-content hr {
-    border: none;
-    border-top: 1px solid #333333;
+/* Variante para itens de perigo/saída (opcional) */
+.top-menu-item-danger:hover {
+    background-color: #d32f2f;
+}
+
+/* Linha separadora divisória */
+.top-menu-separator {
+    height: 1px;
+    background-color: var(--border-color);
     margin: 4px 0;
 }

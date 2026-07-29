@@ -11,5 +11,11 @@ export const Modal = {
 
     prompt(title, message, placeholder = '', defaultValue = '') {
         return ModalService.show({ type: 'prompt', title, message, inputPlaceholder: placeholder, defaultValue });
+    },
+    createProject() {
+        return ModalService.show({ 
+            type: 'create-project', 
+            title: 'Criar Novo Projeto' 
+        });
     }
 };

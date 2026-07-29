@@ -1,0 +1,24 @@
+
+/* src/styles/global.css */
+
+/* Importa as variáveis centralizadas */
+@import './variables.css';
+
+/* Reset básico para zerar margens e alinhar o box-sizing */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Configuração de tela inteira para software desktop/editor */
+html, body, #root {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    user-select: none; /* Impede selecionar textos acidentalmente na interface do editor */
+}

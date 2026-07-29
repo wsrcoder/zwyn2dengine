@@ -102,10 +102,10 @@ ipcMain.handle('project:create', async (event, projectPath) => {
 ipcMain.handle('create-directory', async (event, dirPath) => {
     try {
         fs.mkdirSync(dirPath, { recursive: true });
-        return { success: true };
+        return { success: true, message:"Diretorio criado com sucesso" };
     } catch (error) {
         console.error("[Electron] Erro ao criar diretório:", error);
-        return { success: false, error: error.message };
+        return { success: false, message: error.message };
     }
 });
 
@@ -164,4 +164,8 @@ ipcMain.handle('file-exists', async (event, filePath) => {
     } catch (error) {
         return false;
     }
+});
+
+ipcMain.handle('app:quit', () => {
+    app.quit();
 });

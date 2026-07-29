@@ -1,335 +1,144 @@
 
 
-import { ProjectDataModel } from '../models/ProjectDataModel/ProjectDataModel.js';
-import { MapDataModel } from '../models/MapDataModel/MapDataModel.js';
-import { ImageUtils } from '../utils/ImageUtils.js';
-import { JsonUtils } from '../utils/JsonUtils.js';
-import MapManager from './MapManager.js'; 
+import ProjectStore from '../store/ProjectStore.js';
+import ProjectService from '../services/ProjectService.js';
 
-export class ProjectController {
-    constructor() {
-
-        this.mapManager = new MapManager(); // <-- Instancia o gerenciador de mapas
-
-        this.session = {
-            project: {
-                path: null,
-                data: new ProjectDataModel(),
-                isModified: false,
-            },
-            map: {
-                currentId: null,      // Apenas o ID do mapa atual. Zero redundância!
-                cache: new Map()      // O Map do JS que guarda tudo
-            }
-        }
-    }
-
-    // Atalho para manter compatibilidade com o restante do app que lê projectController.mapsList
-    get mapsList() {
-        return this.mapManager ? this.mapManager.getMaps() : [];
-    }
-
-    getCurrentMap() {
-        const currentId = this.session?.map?.currentId;
-        if (!currentId) return null;
-    
-        const cacheEntry = this.session.map.cache.get(currentId);
-        return cacheEntry ? cacheEntry.mapDataModel : null; // ou o dado correspondente do mapa
+export default class ProjectController {
+    constructor(projectStore, projectService) {
+        this.projectStore = projectStore;
+        this.projectService = projectService;
     }
 
     /**
-     * Define o mapa ativo atual do projeto.
-     * 
-     * Por que fizemos isso?
-     * 1. Sistema de Cache (Lazy Loading): Evitamos carregar todos os mapas do projeto na memória de uma só vez. 
-     *    Primeiro verificamos se o mapa já está no `this.session.map.cache`.
-     * 2. Busca sob demanda: Se o mapa ainda não estiver em memória, localizamos os metadados dele via 
-     *    `mapManager`, lemos o arquivo do disco de forma assíncrona, injetamos no cache e só então 
-     *    atualizamos o ponteiro `currentId`.
-     * 3. Reatividade: Isso permite que a troca de mapas pela interface (`WorldsTab`) funcione perfeitamente 
-     *    sob demanda, mantendo os dados sincronizados com a UI.
+     * Cria um novo projeto do zero, estruturando pastas, gerando o mundo/cena inicial
+     * e populando o estado da sessão de forma limpa.
      */
-    async setCurrentMap(mapId) {
-        if (!mapId) {
-            console.warn("[ProjectController] Tentativa de definir um mapId inválido.");
-            return false;
+    async create(projectRootPath, projectName) {
+        if (!projectRootPath || !projectName) {
+            return {
+                success: false,
+                message: "Caminho e nome do projeto são obrigatórios.",
+                data: null
+            };
         }
-
-        if (!this.session) {
-            this.session = {};
-        }
-        if (!this.session.map) {
-            this.session.map = { currentId: null, cache: new Map() };
-        }
-
-        // 1. Se o mapa já estiver no cache, basta atualizar o currentId
-        if (this.session.map.cache.has(mapId)) {
-            this.session.map.currentId = mapId;
-            console.log(`[ProjectController] Mapa atual alternado (via cache) para o ID: ${mapId}`);
-            return true;
-        }
-
-        // 2. Se não estiver no cache, precisamos encontrá-lo na lista do MapManager e carregar do disco
-        if (!this.mapManager || typeof this.mapManager.getMaps !== 'function') {
-            console.error("[ProjectController] MapManager não inicializado.");
-            return false;
-        }
-
-        const allMaps = this.mapManager.getMaps();
-        const mapMetaIndex = allMaps.findIndex(m => m.id === mapId || m.fileName === mapId);
-
-        if (mapMetaIndex === -1) {
-            console.error(`[ProjectController] Metadados do mapa com ID/FileName '${mapId}' não foram encontrados.`);
-            return false;
-        }
-
-        const mapMeta = allMaps[mapMetaIndex];
-        console.log(`[ProjectController] Mapa '${mapId}' não está em cache. Carregando do disco...`);
 
         try {
-            // Busca os dados do mapa no disco usando o MapManager (seguindo o mesmo padrão do openProject)
-            const result = await this.mapManager.fetchMapDataByIndex(mapMetaIndex, this.session.project.path);
+            // Pega a sessão atual da store
+            const session = this.projectStore.getSession();
 
-            if (result && result.mapModel) {
-                // Insere no cache da sessão
-                this.session.map.cache.set(mapMeta.id, {
-                    mapDataModel: result.mapModel,
-                    fileName: mapMeta.fileName,
-                    isModified: false
-                });
+            // Delega a criação pesada para o projectService
+            const serviceResult = await this.projectService.create(session, projectRootPath, projectName);
 
-                // Define o ID atual
-                this.session.map.currentId = mapMeta.id;
-                console.log(`[ProjectController] Mapa carregado do disco e adicionado ao cache com sucesso.`);
-                return true;
-            } else {
-                console.error(`[ProjectController] Falha ao ler os dados do mapa do disco para o índice ${mapMetaIndex}.`);
-                return false;
+            if (!serviceResult.success) {
+                return {
+                    success: false,
+                    message: serviceResult.message,
+                    data: null
+                };
             }
+
+            return {
+                success: true,
+                message: serviceResult.message,
+                data: serviceResult.data
+            };
+
         } catch (error) {
-            console.error(`[ProjectController] Erro crítico ao carregar mapa do disco:`, error);
-            return false;
+            return {
+                success: false,
+                message: `Erro no controller ao criar projeto: ${error.message}`,
+                data: null
+            };
         }
     }
 
-
-    async createNewProject(projectRootPath, projectName) {
-        const normalizedPath = projectRootPath.replace(/\\/g,'/');
-
-        // 1. Salva o caminho na sessão logo no começo
-        this.session.project.path = normalizedPath;
-
-        await window.electronAPI.createDirectory(`${normalizedPath}/Data/Maps`);
-        await window.electronAPI.createDirectory(`${normalizedPath}/Assets/Tilesets`);
-
-        let default_tileset= 'TLS0000001';
-
-        const defaultTilesets = [
-            {
-                fileName: default_tileset + '.png',
-                sourcePath: './Assets/Tilesets/' + default_tileset + '.png'
-            }
-        ]; 
-
-        try{
-            for(const tileset of defaultTilesets){
-                await ImageUtils.copyImageTo(
-                    tileset.sourcePath,
-                    normalizedPath,
-                    'Assets/Tilesets',
-                    tileset.fileName
-                );
-            }
-
-            console.log('[ProjectController] Tilesets padrão copiados com sucesso.');
-        }catch(error){
-            console.warn("[ProjectController] Não foi possível copiar os tilesets padrão automaticamente:", error.message);
+   /**
+     * Abre o arquivo project.json e carrega a estrutura de mundos e cenas na sessão.
+     * @param {string} projectPath - Caminho raiz do projeto.
+     */
+    async open(projectPath) {
+        if (!projectPath) {
+            return {
+                success: false,
+                message: "O caminho do projeto é obrigatório.",
+                data: null
+            };
         }
 
-        //inicializa os dados do projeto usando o projectDataModel
-        this.session.project.data = new ProjectDataModel({
-            settings:{
-                projectName: projectName,
-                grid:{
-                    default: {
-                        columns: 20,
-                        rows: 15
-                    }
+        try {
+            const session = this.projectStore.getSession();
+
+            // Delega para o service ler o project.json e montar a estrutura na sessão
+            const serviceResult = await this.projectService.open(session, projectPath);
+
+            if (!serviceResult.success) {
+                return {
+                    success: false,
+                    message: serviceResult.message,
+                    data: null
+                };
+            }
+
+            return {
+                success: true,
+                message: serviceResult.message,
+                data: {
+                    project: session.project,
+                    worlds: session.project.getAllWorlds() // Devolve a lista para quem chamou saber o que carregar
                 }
-            }
-        });
+            };
 
-
-        // 2. Inicializa o MapManager com os mapas vindos do ProjectDataModel
-        this.mapManager = new MapManager(this.session.project.data.maps);
-        
-        // Pega a referência do primeiro mapa gerado pelo modelo/gerenciador
-        const firstMap = this.mapManager.getMaps()[0];
-
-
-        // 3. Salva o arquivo project.json usando o método .toJSON() do model
-        await window.electronAPI.saveJsonFile(`${normalizedPath}/project.json`, this.session.project.data.toJSON());
-
-        // 4. Cria e salva o arquivo de dados do mapa inicial
-        const defaultRawMap = {
-            id: firstMap.id,
-            name: firstMap.name,
-            fileName: firstMap.fileName,
-            columns: firstMap.columns,
-            rows: firstMap.rows,
-            tile: { width: 32, height: 32 },
-            orientation: "orthogonal",
-            renderorder: "right-down",
-            tilesets: [
-                {
-                    firstgid: 1,
-                    name: default_tileset,
-                    columns: 32,
-                    rows: 32,
-                    image: { fileName: default_tileset + ".png", width: 1024, height: 1024 },
-                    tile: { width: 32, height: 32, count: 1024 },
-                    meta: {}
-                }
-            ],
-            backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }],
-            mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }],
-            eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }],
-            UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: firstMap.columns, rows: firstMap.rows, data: new Array(firstMap.columns * firstMap.rows).fill(0) }]
-        };
-
-
-        const initialMapModel = new MapDataModel(defaultRawMap);
-        const mapJsonString = JsonUtils.stringifyWithCompactArrays(initialMapModel.toJSON());
-
-        await window.electronAPI.saveTextFile(
-            `${normalizedPath}/Data/Maps/${firstMap.fileName}`, 
-            mapJsonString
-        );
-
-        // 5. Define o mapa criado como o mapa atual na sessão (via cache)
-        this.session.map.cache.set(initialMapModel.id, {
-            mapDataModel: initialMapModel,
-            fileName: firstMap.fileName,
-            isModified: false
-        });
-
-        this.session.map.currentId = initialMapModel.id;
-        this.session.project.isModified = false;
-
-        console.log("[ProjectController] Projeto criado com sucesso!");
-        console.log("[Debug Cache] Mapas na memória:", Array.from(this.session.map.cache.entries()));
-
+        } catch (error) {
+            return {
+                success: false,
+                message: `Erro no controller ao abrir projeto: ${error.message}`,
+                data: null
+            };
+        }
     }
 
-    async openProject(projectPath) {
-        // 1. Normaliza o caminho do projeto e salva na sessão
-        const normalizedPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
-        this.session.project.path = normalizedPath;
-
-        const jsonFilePath = `${normalizedPath}/project.json`;
-        console.log("[ProjectController] Tentando ler o arquivo em:", jsonFilePath);
-
-        const response = await window.electronAPI.loadJsonFile(jsonFilePath);
-        console.log("[ProjectController] Resposta bruta da API:", response);
-
-        let projectInfo = null;
-        if (response) {
-            if (response.data) {
-                projectInfo = response.data;
-            } else if (response.content) {
-                projectInfo = typeof response.content === 'string' ? JSON.parse(response.content) : response.content;
-            } else {
-                projectInfo = response;
-            }
-        }
-
-        console.log("[ProjectController] projectConfig processado:", projectInfo);
-
-        if (projectInfo && typeof projectInfo === 'object') {
-            // 2. Instancia o ProjectDataModel e guarda na sessão
-            this.session.project.data = new ProjectDataModel(projectInfo);
-            this.session.project.isModified = false;
-
-            // 3. Inicializa o MapManager usando a lista de mapas do modelo da sessão
-            const mapsSource = this.session.project.data.maps || [];
-            this.mapManager = new MapManager(mapsSource);
-            
-            console.log("[ProjectController] mapsList populada com sucesso via MapManager:", this.mapManager.mapsList);
-        } else {
-            console.error("[ProjectController] Falha crítica: projectConfig é inválido ou nulo.");
-            this.session.project.data = new ProjectDataModel();
-            this.mapManager = new MapManager([]);
-            return false;
-        }
-
-        // Limpa o cache antigo antes de abrir um novo projeto
-        this.session.map.cache.clear();
-        this.session.map.currentId = null;
-
-        // 4. Carrega o primeiro mapa utilizando o MapManager e armazena no cache
-        const allMaps = this.mapManager.getMaps();
-        if (allMaps.length > 0) {
-            const firstMapMeta = allMaps[0];
-            const result = await this.mapManager.fetchMapDataByIndex(0, this.session.project.path);
-            
-            if (result && result.mapModel) {
-                // Insere o primeiro mapa no cache usando o padrão novo
-
-                this.session.map.cache.set(firstMapMeta.id,{
-                                            mapDataModel: result.mapModel,
-                                             fileName: firstMapMeta.fileName,
-                                            isModified: true
-                                    });
-
-                // Define o ID atual
-                this.session.map.currentId = firstMapMeta.id;
-                this.session.project.isModified = false;
-
-                console.log("[ProjectController] Primeiro mapa carregado com sucesso para o cache da sessão.");
-                return true;
-            } else {
-                console.warn("[ProjectController] Não foi possível carregar os dados do primeiro mapa do disco.");
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    async closeProject() {
+   /**
+     * Fecha o projeto atual, verificando se há alterações pendentes
+     * e resetando completamente o estado da sessão.
+     */
+    async close() {
         console.log("[ProjectController] Fechando o projeto atual...");
 
-        // 1. Verifica se o projeto ou algum mapa no cache possui alterações não salvas
-        let hasUnsavedChanges = this.session.project.isModified;
-        
-        if (!hasUnsavedChanges) {
-            for (const entry of this.session.map.cache.values()) {
-                if (entry.isModified) {
-                    hasUnsavedChanges = true;
-                    break;
-                }
-            }
+        // Verifica de forma centralizada se há qualquer alteração pendente
+        if (this.hasUnsavedChanges()) {
+            console.warn("[ProjectController] Existem alterações não salvas no projeto ou em cenas abertas.");
+            // Futuramente: abrir modal de confirmação (Salvar / Descartar / Cancelar)
         }
 
-        if (hasUnsavedChanges) {
-            console.warn("[ProjectController] Existem alterações não salvas no projeto ou em mapas abertos.");
-            // Aqui no futuro você pode abrir um modal de confirmação (Salvar / Descartar / Cancelar)
-        }
+        // Reseta totalmente a sessão para o estado inicial/vazio
+        this.session.rootPath = null;
+        this.session.project = new ProjectModel();
+        this.session.isModified = false;
 
-        // 2. Reseta totalmente a sessão para o estado inicial/vazio
-        this.session.project.path = null;
-        this.session.project.data = null;
-        this.session.project.isModified = false;
-
-        // Limpa a nova estrutura de mapas da sessão
-        this.session.map.currentId = null;
-        this.session.map.cache.clear();
-
-        // 3. Limpa o gerenciador de mapas
-        this.mapManager = new MapManager([]);
+        this.session.world.navigation.activeWorldId = null;
+        this.session.world.navigation.activeSceneId = null;
+        this.session.world.scenes.cache.clear();
 
         console.log("[ProjectController] Projeto fechado com sucesso. Sessão e cache limpos.");
         return true;
+    }
+
+    /**
+     * Verifica centralmente se existem quaisquer alterações não salvas
+     * no projeto (metadados ou cenas abertas em cache).
+     */
+    hasUnsavedChanges() {
+        // 1. Verifica alterações no projeto geral
+        if (this.session.isModified) {
+            return true;
+        }
+
+        // 2. Delega para o ScenesState verificar se há cenas modificadas no cache
+        if (this.session.world && this.session.world.scenes) {
+            return this.session.world.scenes.hasModifiedScenes();
+        }
+
+        return false;
     }
 
     
@@ -340,51 +149,66 @@ export class ProjectController {
     // 3. Uma nova camada for adicionada a um mapa.
     // Ajustar essa sincronização à medida que o editor continuar evoluindo.
 
-
-    async saveProject() {
-        if (!this.session.project.path || !this.session.project.data) {
+/**
+     * Salva o projeto completo no disco: atualiza o project.json e todas as
+     * cenas modificadas que estão presentes no cache de sessão.
+     */
+    async save() {
+        if (!this.session.rootPath || !this.session.project) {
             console.error("[ProjectController] Nenhum projeto aberto para salvar.");
             return false;
         }
 
         try {
             console.log("[ProjectController] Salvando projeto...");
-            const projectPath = this.session.project.path;
+            const rootPath = this.session.rootPath;
 
-            // 1. Salva o project.json
-            await window.electronAPI.saveJsonFile(`${projectPath}/project.json`, this.session.project.data.toJSON());
+            // 1. Salva o arquivo principal project.json
+            await window.electronAPI.saveJsonFile(
+                `${rootPath}/project.json`, 
+                this.session.project.toJSON()
+            );
 
-            // 2. Percorre o cache de forma direta e eficiente
-            for (const [mapId, cacheEntry] of this.session.map.cache.entries()) {
+            // 2. Percorre o cache de cenas da sessão para salvar as modificadas
+            const scenesState = this.session.world.scenes;
+            
+            for (const [sceneId, cacheEntry] of scenesState.cache.entries()) {
                 if (cacheEntry.isModified) {
-                    // O fileName já está guardado junto, zero buscas necessárias!
-                    const mapFilePath = `${projectPath}/Data/Maps/${cacheEntry.fileName}`;
-                
+                    // Busca os metadados da cena (incluindo o fileName correto) através do ProjectModel
+                    const sceneDetails = this.session.project.getAllScenes().find(s => s.id === sceneId);
+                    
+                    if (!sceneDetails || !sceneDetails.fileName) {
+                        console.error(`[ProjectController] Não foi possível encontrar o fileName para a cena ID ${sceneId}.`);
+                        continue;
+                    }
+
+                    const mapFilePath = `${rootPath}/Data/Maps/${sceneDetails.fileName}`;
                     const mapJsonString = JsonUtils.stringifyWithCompactArrays(cacheEntry.mapDataModel.toJSON());
+                    
                     await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
-                
+                    
+                    // Reseta a flag de modificação da cena após salvar com sucesso
                     cacheEntry.isModified = false;
-                    console.log(`[ProjectController] Mapa ${cacheEntry.fileName} salvo.`);
+                    console.log(`[ProjectController] Cena ${sceneDetails.fileName} salva.`);
                 }
             }
 
-            // 3. Otimização de Memória: limpa o cache e mantém APENAS o atual
-            const currentId = this.session.map.currentId;
-            const currentEntry = this.session.map.cache.get(currentId);
+            // 3. Otimização de Memória: limpa o cache e mantém APENAS a cena ativa atual
+            const activeSceneId = scenesState.activeSceneId;
+            const activeCacheEntry = activeSceneId ? scenesState.cache.get(activeSceneId) : null;
 
-            this.session.map.cache.clear();
+            scenesState.cache.clear();
 
-            if (currentEntry) {
-                
-                this.session.map.cache.set(currentId,{
-                                            mapDataModel: currentEntry,
-                                            fileName: currentEntry.fileName,
-                                            isModified: true
-                                    });
+            if (activeCacheEntry && activeSceneId) {
+                scenesState.cache.set(activeSceneId, {
+                    mapDataModel: activeCacheEntry.mapDataModel,
+                    isModified: activeCacheEntry.isModified,
+                    isDeleted: false
+                });
             }
 
-            this.session.project.isModified = false;
-            console.log("[ProjectController] Projeto salvo e cache limpo com sucesso!");
+            this.session.isModified = false;
+            console.log("[ProjectController] Projeto salvo e cache otimizado com sucesso!");
             return true;
 
         } catch (error) {
@@ -393,24 +217,4 @@ export class ProjectController {
         }
     }
 
-
-    /**
-     * Atalho para criar um novo mapa através do MapManager, mantendo o controle da sessão centralizado.
-     */
-    async createNewMap(columns = 20, rows = 15) {
-        if (!this.mapManager || !this.session) {
-            console.error("[ProjectController] MapManager ou Sessão não inicializados.");
-            return null;
-        }
-
-        // Delega a criação para o MapManager, passando a sessão atual
-        const result = this.mapManager.createNewMap(this.session, columns, rows);
-        
-        if (result) {
-            // Se precisar disparar algum save automático do project.json ou atualizar listeners da UI, faz aqui.
-            console.log("[ProjectController] Novo mapa criado via atalho do MapManager.");
-        }
-
-        return result;
-    }
 }

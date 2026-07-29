@@ -345,5 +345,84 @@ export class ProjectController {
         }
     }
 
+//============================================================================================================
+     /**
+     * Abre um projeto existente a partir do caminho raiz, lê o project.json,
+     * instancia o ProjectModel e carrega a primeira cena padrão para o cache.
+     */
+    async open2(projectPath) {
+        try {
+            // 1. Normaliza o caminho e salva na sessão
+            const normalizedPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
+            this.session.rootPath = normalizedPath;
+
+            const jsonFilePath = `${normalizedPath}/project.json`;
+            console.log("[ProjectController] Tentando ler o arquivo em:", jsonFilePath);
+
+            const response = await window.electronAPI.loadJsonFile(jsonFilePath);
+            console.log("[ProjectController] Resposta bruta da API:", response);
+
+            let projectInfo = null;
+            if (response) {
+                if (response.data) {
+                    projectInfo = response.data;
+                } else if (response.content) {
+                    projectInfo = typeof response.content === 'string' ? JSON.parse(response.content) : response.content;
+                } else {
+                    projectInfo = response;
+                }
+            }
+
+            if (!projectInfo || typeof projectInfo !== 'object') {
+                console.error("[ProjectController] Falha crítica: projectConfig é inválido ou nulo.");
+                this.session.project = new ProjectModel();
+                return false;
+            }
+
+            // 2. Instancia o ProjectModel na sessão
+            this.session.project = new ProjectModel(projectInfo);
+            this.session.isModified = false;
+
+            // 3. Limpa o estado/cache de cenas anterior
+            this.session.world.scenes.cache.clear();
+            this.session.world.navigation.activeWorldId = null;
+            this.session.world.navigation.activeSceneId = null;
+
+            // 4. Localiza o primeiro mundo e a primeira cena para carregar inicialmente
+            const allWorlds = this.session.project.getAllWorlds();
+            if (allWorlds.length === 0) {
+                console.warn("[ProjectController] O projeto aberto não possui nenhum mundo.");
+                return true;
+            }
+
+            const firstWorld = allWorlds[0];
+            const allScenes = this.session.project.getAllScenes(firstWorld.id);
+
+            if (allScenes.length > 0) {
+                const firstScene = allScenes[0];
+
+                // Usa o nosso setCurrentScene que já gerencia o SceneService e o cache perfeitamente
+                const loadedScene = await this.setCurrentScene(firstWorld.id, firstScene.id);
+
+                if (!loadedScene) {
+                    console.warn("[ProjectController] Não foi possível carregar os dados da primeira cena do disco.");
+                    return false;
+                }
+
+                console.log("[ProjectController] Projeto aberto e primeira cena carregada com sucesso!");
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error("[ProjectController] Erro crítico ao abrir o projeto:", error);
+            return false;
+        }
+    }
+
 
 }
+
+
+//====================================================================================================
+
