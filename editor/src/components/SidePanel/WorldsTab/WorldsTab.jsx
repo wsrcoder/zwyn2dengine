@@ -19,22 +19,22 @@ export default function WorldsTab({ projectController, worldController, projectS
 
         const session = projectStore.session;
         
-        // 1. Pega a lista de mundos do project.json
-        const worlds = session.project?.worlds || [];
+        // 1. Pega a lista de mundos do projeto (verificando session.project ou session.project.worlds)
+        const projectData = session.project;
+        const worlds = projectData?.worlds || [];
         setWorldsList([...worlds]);
 
-        // 2. Pega os IDs ativos da navegação
-        const currentWorldId = session.world?.navigation?.activeWorldId;
-        const currentSceneId = session.world?.navigation?.activeSceneId;
+        // 2. Pega os IDs ativos direto da raiz da navegação (session.navigation)
+        const currentWorldId = session.navigation?.activeWorldId;
+        const currentSceneId = session.navigation?.activeSceneId;
+        
         setActiveWorldId(currentWorldId);
         setActiveSceneId(currentSceneId);
 
         // 3. Se houver um mundo ativo, extrai as cenas dele para a lista inferior
-        if (currentWorldId) {
+        if (currentWorldId !== undefined && currentWorldId !== null) {
             const activeWorldObj = worlds.find(w => w.id === currentWorldId || w.name === currentWorldId);
             setScenesList(activeWorldObj?.scenes || []);
-            console.log("scenes");
-            console.log(activeWorldObj?.scenes);
         } else {
             setScenesList([]);
         }
@@ -63,8 +63,8 @@ export default function WorldsTab({ projectController, worldController, projectS
         if (projectController && typeof projectController.setActiveWorld === 'function') {
             await projectController.setActiveWorld(worldId);
         } else {
-            // Fallback direto na session caso o controller ainda não tenha o método
-            projectStore.session.world.navigation.activeWorldId = worldId;
+            // Fallback direto na session atualizada para a raiz
+            projectStore.session.navigation.activeWorldId = worldId;
         }
         eventBus.notify('worldChanged', worldId);
         syncFromStore();
@@ -73,9 +73,9 @@ export default function WorldsTab({ projectController, worldController, projectS
     const handleCreateWorld = async () => {
         console.log("[WorldsTab] Criando novo mundo...");
         if (worldController && typeof worldController.createWorld === 'function') {
-            console.log("entrou em handleCreateworld")
             await worldController.createWorld();
             eventBus.notify('worldsListUpdated');
+            syncFromStore();
         }
     };
 
@@ -85,7 +85,7 @@ export default function WorldsTab({ projectController, worldController, projectS
         if (projectController && typeof projectController.setActiveScene === 'function') {
             await projectController.setActiveScene(sceneId);
         } else {
-            projectStore.session.world.navigation.activeSceneId = sceneId;
+            projectStore.session.navigation.activeSceneId = sceneId;
         }
         eventBus.notify('sceneChanged', sceneId);
         syncFromStore();
@@ -96,6 +96,7 @@ export default function WorldsTab({ projectController, worldController, projectS
         if (projectController && typeof projectController.createScene === 'function') {
             await projectController.createScene();
             eventBus.notify('sceneChanged');
+            syncFromStore();
         }
     };
 
@@ -113,7 +114,6 @@ export default function WorldsTab({ projectController, worldController, projectS
                 </div>
 
                 {expandedWorlds && (
-                    
                     <div className="sidebar-content">
                         <button className="sidebar-btn-action" onClick={handleCreateWorld}>
                             + Novo Mundo
@@ -121,24 +121,21 @@ export default function WorldsTab({ projectController, worldController, projectS
 
                         <ul className="sidebar-list">
                             {worldsList.length === 0 ? (
-                            <li className="sidebar-empty">Nenhum mundo encontrado</li>
-                            
+                                <li className="sidebar-empty">Nenhum mundo encontrado</li>
                             ) : (
-                            
-                            worldsList.map((world, idx) => {
-                            // Garante que pegamos um ID ou usamos o nome/índice como fallback seguro
-                            const worldId = world.id || idx;
-                            const worldName = world.name || `Mundo ${idx + 1}`;
-                            const isSelected = activeWorldId === worldId || activeWorldId === world.name;
+                                worldsList.map((world, idx) => {
+                                    const worldId = world.id !== undefined ? world.id : idx;
+                                    const worldName = world.name || `Mundo ${idx + 1}`;
+                                    const isSelected = activeWorldId === worldId || activeWorldId === world.name;
 
-                             return (
-                                    <li 
-                                        key={worldId}
-                                        className={`sidebar-item ${isSelected ? 'active' : ''}`}
-                                        onClick={() => handleSelectWorld(worldId)}
-                                    >
-                                        <span>🌐 {worldName}</span>
-                                    </li>
+                                    return (
+                                        <li 
+                                            key={worldId}
+                                            className={`sidebar-item ${isSelected ? 'active' : ''}`}
+                                            onClick={() => handleSelectWorld(worldId)}
+                                        >
+                                            <span>🌐 {worldName}</span>
+                                        </li>
                                     );
                                 })
                             )}
@@ -162,24 +159,24 @@ export default function WorldsTab({ projectController, worldController, projectS
                         <button 
                             className="sidebar-btn-action" 
                             onClick={handleCreateScene}
-                            disabled={!activeWorldId}
+                            disabled={activeWorldId === null || activeWorldId === undefined}
                         >
                             + Nova Cena
                         </button>
 
                         <ul className="sidebar-list">
-                            {!activeWorldId ? (
+                            {activeWorldId === null || activeWorldId === undefined ? (
                                 <li className="sidebar-empty">Selecione um mundo primeiro</li>
                             ) : scenesList.length === 0 ? (
                                 <li className="sidebar-empty">Nenhuma cena neste mundo</li>
                             ) : (
                                 scenesList.map((scene, idx) => {
-                                    const sceneId = scene.id || scene.name;
+                                    const sceneId = scene.id !== undefined ? scene.id : idx;
                                     const isSelected = activeSceneId === sceneId;
 
                                     return (
                                         <li 
-                                            key={sceneId || idx}
+                                            key={sceneId}
                                             className={`sidebar-item ${isSelected ? 'active' : ''}`}
                                             onClick={() => handleSelectScene(sceneId)}
                                         >

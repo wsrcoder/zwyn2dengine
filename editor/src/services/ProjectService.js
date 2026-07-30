@@ -11,7 +11,7 @@ export default class ProjectService {
      * Cria um novo projeto do zero, estruturando pastas, copiando assets,
      * gerando o mundo/cena inicial no disco e populando a sessão.
      */
-    async create(session, projectRootPath, projectName) {
+   async create(session, projectRootPath, projectName) {
         if (!projectRootPath || !projectName) {
             return {
                 success: false,
@@ -31,8 +31,8 @@ export default class ProjectService {
             await window.electronAPI.createDirectory(`${session.rootPath}/Data/Maps`);
             await window.electronAPI.createDirectory(`${session.rootPath}/Assets/Tilesets`);
 
-            // 3. Copia os tilesets padrão
-            const default_tileset = 'TLS0000001';
+            // 3. Copia os tilesets padrão - TD: TOP DOWN
+            const default_tileset = 'TTD1';
             const defaultTilesets = [
                 {
                     fileName: default_tileset + '.png',
@@ -64,9 +64,6 @@ export default class ProjectService {
                 }
             });
 
-            console.log("session:");
-            console.log(session);
-
             const defaultWorld = session.project.worlds[0];
             const defaultScene = defaultWorld.scenes[0];
 
@@ -76,8 +73,8 @@ export default class ProjectService {
             // 6. Cria e salva o arquivo de dados da cena inicial no disco
             const defaultRawMap = {
                 id: defaultScene.id,
-                name: defaultScene.name,
-                fileName: defaultScene.fileName,
+                name: 'Scene' + defaultScene.id,
+                fileName: 'W' + defaultWorld.id + 'S' + defaultScene.id + '.json',
                 columns: defaultScene.columns || 20,
                 rows: defaultScene.rows || 15,
                 tile: { width: 32, height: 32 },
@@ -108,15 +105,22 @@ export default class ProjectService {
                 mapJsonString
             );
 
-            // 7. Popula o cache da sessão com a cena inicial e define os ponteiros ativos
-            session.world.scenes.cache.set(defaultScene.id, {
-                mapDataModel: initialMapModel,
+            // 7. Popula o cache global da sessão com a cena inicial (guardando a referência do worldId) e define a navegação na raiz
+            if (!session.workingScenes) {
+                session.workingScenes = new Map();
+            }
+
+            session.workingScenes.set(defaultScene.id, {
+                worldId: defaultWorld.id, // Referência limpa de qual mundo essa cena pertence
+                data: initialMapModel,
+                fileName: defaultScene.fileName,
                 isModified: false,
                 isDeleted: false
             });
 
-            session.world.navigation.activeWorldId = defaultWorld.id;
-            session.world.navigation.activeSceneId = defaultScene.id;
+            // Ponteiros de navegação atualizados para a raiz da sessão
+            session.navigation.activeWorldId = defaultWorld.id;
+            session.navigation.activeSceneId = defaultScene.id;
 
             console.log("[ProjectService] Projeto criado e estruturado com sucesso no disco!");
 
@@ -138,7 +142,6 @@ export default class ProjectService {
             };
         }
     }
-
     /**
      * Lê apenas o project.json e inicializa o ProjectModel na sessão.
      */
@@ -187,9 +190,9 @@ export default class ProjectService {
             session.isModified = false;
 
             // Limpa o estado/cache de cenas anterior
-            session.world.scenes.cache.clear();
-            session.world.navigation.activeWorldId = null;
-            session.world.navigation.activeSceneId = null;
+            session.workingScenes.cache.clear();
+            session.navigation.activeWorldId = null;
+            session.navigation.activeSceneId = null;
 
             console.log("[ProjectService] project.json carregado com sucesso.");
 

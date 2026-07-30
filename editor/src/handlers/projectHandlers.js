@@ -7,7 +7,7 @@ import { eventBus } from "../state/EventBus";
  * Orquestra as interações da UI com os Controllers do domínio do projeto.
  * Todos os métodos retornam um objeto padronizado: { success, message, data }
  */
-export function createProjectHandlers(projectController, sceneController, projectStore) {
+export function createProjectHandlers(projectController, worldController, projectStore) {
     
     const handleNewProject = async () => {
         console.log("[Handler] Iniciando fluxo de Novo Projeto...");
@@ -66,62 +66,72 @@ export function createProjectHandlers(projectController, sceneController, projec
         console.log("[Handler] Iniciando fluxo de Abrir Projeto...");
         
         try {
-            // 1. Simulação: Aqui você chamaria o Electron para abrir a janela de seleção de pasta
-            // const projectPath = await window.electronAPI.showOpenDialog();
-            // if (!projectPath) return { success: false, message: "Usuário cancelou a operação.", data: null };
-
-
             const selectedPath = await window.electronAPI.openDirectory(); 
             console.log("selected path: " + selectedPath);
+            
             if (selectedPath && projectController) {
-                
-                // 2. Controller faz o trabalho dele: lê o disco e atualiza a Store
+                // 1. Controller lê o disco e atualiza a Store
                 const openResult = await projectController.open(selectedPath);
             
                 if (!openResult.success) {
                     console.error("Erro ao abrir projeto:", openResult.message);
-                        return {
-                            success: false,
-                            message: openResult.message || "Falha ao abrir os arquivos do projeto.",
-                            data: null
+                    return {
+                        success: false,
+                        message: openResult.message || "Falha ao abrir os arquivos do projeto.",
+                        data: null
                     };
                 }
 
                 eventBus.notify('projectLoaded', openResult.data);
-
                 console.log("Projeto aberto com sucesso! Orquestrando carregamento da cena...");
-            
 
-            
-
-                // 3. Handler assume a orquestração: pega os dados da Store e aciona a Cena
+                // 2. Handler assume a orquestração: pega os dados da Store e aciona a Cena
                 const session = projectStore.getSession();
                 const worlds = openResult.data.worlds;
 
                 if (worlds && worlds.length > 0) {
                     const firstWorld = worlds[0];
-                
-                    // Define o mundo ativo
-                    session.world.navigation.activeWorldId = firstWorld.id;
+                    const firstScene = firstWorld.scenes[0];
 
-                    const scenes = session.project.getAllScenes(firstWorld.id);
-                    if (scenes && scenes.length > 0) {
-                        const firstScene = scenes[0];
-                    
-                        // Pede para o SceneController carregar e fazer parse do arquivo de mapa
-                        const sceneResult = await sceneController.getSceneById(firstScene.id);
-
-                        if (!sceneResult.success) {
-                            console.warn("[Handler] Falha ao carregar o mapa inicial:", sceneResult.message);
-                            return {
-                                success: false,
-                                message: `Projeto aberto, mas falhou ao carregar a cena inicial: ${sceneResult.message}`,
-                                data: openResult.data
-                            };
-                        }
-
-                        console.log("[Handler] Mapa carregado no cache da Store com sucesso!");
+                    if (!firstScene) {
+                        return {
+                            success: false,
+                            message: "O primeiro mundo não possui nenhuma cena cadastrada.",
+                            data: openResult.data
+                        };
                     }
+
+                    // Pede para o Controller carregar e fazer parse do arquivo de mapa do disco
+                    const sceneResult = await worldController.getSceneById(firstScene.id);
+
+                    if (!sceneResult.success) {
+                        console.warn("[Handler] Falha ao carregar o mapa inicial:", sceneResult.message);
+                        return {
+                            success: false,
+                            message: `Projeto aberto, mas falhou ao carregar a cena inicial: ${sceneResult.message}`,
+                            data: openResult.data
+                        };
+                    }
+
+                    // Define os IDs ativos na raiz da session
+                    session.navigation.activeWorldId = firstWorld.id;
+                    session.navigation.activeSceneId = firstScene.id;
+
+                    // Garante que o Map de workingScenes existe antes de dar o set
+                    if (!session.workingScenes) {
+                        session.workingScenes = new Map();
+                    }
+
+                    // Popula o workingScenes utilizando os dados reais retornados pelo sceneResult
+                    session.workingScenes.set(firstScene.id, {
+                        worldId: firstWorld.id, // Referência limpa de qual mundo essa cena pertence
+                        data: sceneResult.data, // O MapDataModel parseado do disco
+                        fileName: firstScene.fileName,
+                        isModified: false,
+                        isDeleted: false
+                    });
+
+                    console.log("[Handler] Mapa carregado no workingScenes da Store com sucesso!");
                 }
 
                 return {
@@ -129,7 +139,6 @@ export function createProjectHandlers(projectController, sceneController, projec
                     message: "Projeto e cena inicial carregados com sucesso.",
                     data: openResult.data
                 };
-
             }
 
         } catch (error) {

@@ -39,13 +39,13 @@ export default class WorldService {
             worlds.push(newWorldData);
 
             // 2. Define o mundo como ativo PRIMEIRO para o createScene achar ele
-            session.world.navigation.activeWorldId = newId;
+            session.navigation.activeWorldId = newId;
 
             // 3. Agora cria a cena inicial vinculada a este mundo ativo
-            const sceneResult = this.createScene(session, newId);
+            const sceneResult = this.createScene(session);
         
             if (sceneResult.success) {
-                session.world.navigation.activeSceneId = sceneResult.data.meta.id;
+                session.navigation.activeSceneId = sceneResult.data.id;
             }
 
             session.isModified = true;
@@ -69,10 +69,10 @@ export default class WorldService {
         }
     }
 
-    createScene(session, worldId = 0, columns = 20, rows = 15) {
+    createScene(session, columns = 20, rows = 15) {
         try {
-            const activeWorldId = session.world.navigation.activeWorldId;
-            if (activeWorldId === null) {
+            const activeWorldId = session.navigation?.activeWorldId;
+            if (activeWorldId === null || activeWorldId === undefined) {
                 return {
                     success: false,
                     message: "Nenhum mundo ativo selecionado para criar a cena.",
@@ -97,8 +97,8 @@ export default class WorldService {
             // Calcula o ID com base nas cenas do mundo ativo
             const newId = world.scenes.length > 0 ? Math.max(...world.scenes.map(m => m.id)) + 1 : 1;
             const paddedId = String(newId).padStart(ProjectParams.MAX_MAP_INTERVAL, '0');
-            const newName = `Map${paddedId}`;
-            const newFileName = `${newName}.json`;
+            const newName = `Scene${paddedId}`;
+            const newFileName = `W${world.id}S${paddedId}.json`;
 
             const newSceneMeta = {
                 id: newId,
@@ -111,6 +111,7 @@ export default class WorldService {
             // Adiciona na lista de metadados de cenas do mundo
             world.scenes.push(newSceneMeta);
 
+            const default_tileset = 'TTD1'; // Mantendo o mesmo padrão de tileset
             const defaultRawMap = {
                 id: newId,
                 name: newName,
@@ -118,15 +119,15 @@ export default class WorldService {
                 rows: rows,
                 tile: { width: ProjectParams.TILE_SIZE, height: ProjectParams.TILE_SIZE },
                 orientation: ProjectParams.MAP_ORIENTATION,
-                renderOrder: ProjectParams.MAP_RENDER_ORDER,
+                renderorder: ProjectParams.MAP_RENDER_ORDER,
 
                 tilesets: [
                     {
                         firstgid: 1,
-                        name: "TLS0000001",
+                        name: default_tileset,
                         columns: 32,
                         rows: 32,
-                        image: { name: "TLS0000001.png", width: 1024, height: 1024 },
+                        image: { fileName: default_tileset + ".png", width: 1024, height: 1024 },
                         tile: { width: 32, height: 32, count: 1024 },
                         meta: {}
                     }
@@ -141,15 +142,21 @@ export default class WorldService {
             // Instancia o novo modelo
             const newMapModel = new MapDataModel(defaultRawMap);
 
-            // Joga direto no Cache da Sessão atualizado
-            session.world.scenes.cache.set(newId, {
+            // Garante que o workingScenes existe na session
+            if (!session.workingScenes) {
+                session.workingScenes = new Map();
+            }
+
+            session.workingScenes.set(newId, {
+                worldId: world.id, // Referência limpa de qual mundo essa cena pertence
                 data: newMapModel,
                 fileName: newFileName,
-                isModified: true
+                isModified: false,
+                isDeleted: false
             });
 
             // Atualiza os ponteiros de navegação e flag de modificação
-            session.world.navigation.activeSceneId = newId;
+            session.navigation.activeSceneId = newId;
             session.isModified = true;
 
             console.log(`[worldService] Nova cena criada em cache: ${newName} no mundo ID ${activeWorldId}`);
@@ -157,7 +164,7 @@ export default class WorldService {
             return {
                 success: true,
                 message: "Cena criada com sucesso no service.",
-                data: { meta: newSceneMeta, mapDataModel: newMapModel }
+                data: newMapModel
             };
 
         } catch (error) {
@@ -169,7 +176,6 @@ export default class WorldService {
             };
         }
     }
-
     /**
     * Marca uma cena como deletada apenas no cache da sessão.
     * A cena some da interface, mas seus dados e o ProjectModel 
@@ -177,8 +183,8 @@ export default class WorldService {
     */
     delete(session, sceneId) {
         try {
-            const activeWorldId = session.world.navigation.activeWorldId;
-            if (activeWorldId === null) {
+            const activeWorldId = session.navigation?.activeWorldId;
+            if (activeWorldId === null || activeWorldId === undefined) {
                 return {
                     success: false,
                     message: "Nenhum mundo ativo selecionado para deletar a cena.",
@@ -196,32 +202,40 @@ export default class WorldService {
             }
 
             // Verifica se a cena realmente existe no projeto
-            const sceneExists = world.scenes.some(s => s.id === sceneId);
+            const sceneExists = session.project.getSceneById(sceneId);
             if (!sceneExists) {
                 return {
                     success: false,
-                    message: `Cena ID ${sceneId} não encontrada no projeto.`,
+                    message: `Scene ID ${sceneId} não encontrada no projeto.`,
                     data: null
                 };
             }
 
+            // Garante que o Map de workingScenes existe
+            if (!session.workingScenes) {
+                session.workingScenes = new Map();
+            }
+
             // Marca como deletada APENAS no cache da sessão (mantém o ProjectModel intacto até o Save)
-            let cachedScene = session.world.scenes.cache.get(sceneId);
+            let cachedScene = session.workingScenes.cache.get(sceneId);
             if (cachedScene) {
                 cachedScene.isDeleted = true;
                 cachedScene.isModified = true;
             } else {
                 // Se a cena não estava carregada no cache, injetamos ela lá só com a flag de deleção
-                session.world.scenes.cache.set(sceneId, {
+                session.workingScenes.cache.set(sceneId, {
+                    worldId: world.id,
+                    fileName: sceneExists.fileName,
                     data: null,
                     isDeleted: true,
-                    isModified: true
+                    isModified: true,
+                    
                 });
             }
 
             // Se a cena deletada era a ativa, limpa a seleção da navegação
-            if (session.world.navigation.activeSceneId === sceneId) {
-                session.world.navigation.activeSceneId = null;
+            if (session.navigation.activeSceneId === sceneId) {
+                session.navigation.activeSceneId = null;
             }
 
             // Marca o projeto como modificado para acionar o botão de salvar
