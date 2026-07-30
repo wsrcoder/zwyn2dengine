@@ -76,15 +76,15 @@ export default class ProjectModel {
 
       const initialScene = new SceneSectionModel({
         id: 1,
-        name: "Map0001",
-        fileName: "Map0000001.json", // Ou use ProjectParams se preferir
+        name: "Scene1",
+        fileName: "W1S1.json", // Ou use ProjectParams se preferir
         columns: defaultColumns,
         rows: defaultRows
       });
 
       const initialWorld = new WorldSectionModel({
         id: 1,
-        name: "Mundo Principal",
+        name: "Main World",
         scenes: [initialScene]
       });
 

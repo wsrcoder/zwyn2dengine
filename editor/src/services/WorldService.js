@@ -265,16 +265,22 @@ export default class WorldService {
      * Carrega os dados de uma cena específica do disco (ou do cache da sessão),
      * utilizando o session.rootPath e a nova estrutura do ProjectModel.
      */
-    async getById(session, worldId, sceneId) {
+    async getSceneById(session, worldId, sceneId) {
         try {
+
+            // Garante que o Map de workingScenes existe na sessão
+            if (!session.workingScenes) {
+                session.workingScenes = new Map();
+            }
+
             // 1. Verifica se já está no cache da sessão para evitar leitura desnecessária do disco
-            const cachedScene = session.world.scenes.cache.get(sceneId);
+            const cachedScene = session.workingScenes.get(sceneId);
             if (cachedScene && cachedScene.data) {
                 console.log(`[worldService] Cena ID ${sceneId} encontrada no cache.`);
                 return {
                     success: true,
                     message: "Cena recuperada do cache com sucesso.",
-                    data: cachedScene.mapDataModel
+                    data: cachedScene.data
                 };
             }
 
@@ -317,7 +323,9 @@ export default class WorldService {
             const mapModel = new MapDataModel(rawData);
 
             // 5. Guarda no cache da sessão para as próximas consultas
-            session.world.scenes.cache.set(sceneId, {
+            session.workingScenes.cache.set(sceneId, {
+                worldId: worldId,
+                fileName: sceneMeta.fileName,
                 data: mapModel,
                 isModified: false,
                 isDeleted: false
