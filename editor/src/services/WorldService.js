@@ -2,14 +2,74 @@ import {ProjectParams} from "../constants/ProjectParams";
 import { MapDataModel } from "../models/MapDataModel/MapDataModel";
 
 
-export default class SceneService {
+export default class WorldService {
     constructor() {
         // Serviço stateless: não armazena listas de mapas ou estado interno.
     }
 
 
+    createWorld(session, worldName = null) {
+        try {
+            // 1. Garante que o array de mundos existe no projeto
+            if (!session.project.worlds) {
+                session.project.worlds = [];
+            }
 
-    create(session, columns = 20, rows = 15) {
+            const worlds = session.project.worlds;
+
+            // 2. Calcula o ID e o nome do novo mundo de forma automática
+            const newId = worlds.length > 0 ? Math.max(...worlds.map(w => w.id || 0)) + 1 : 1;
+            const paddedId = String(newId).padStart(ProjectParams.MAX_WORLD_INTERVAL || 3, '0'); // Ajuste se usar params próprios para mundos
+            const name = worldName || `Mundo ${paddedId}`;
+            //const folderName = `World_${paddedId}`;
+
+            // 3. Monta a estrutura padrão do objeto World (com seu array de cenas vazio)
+            const newWorldData = {
+                id: newId,
+                name: name,
+                //folder: folderName,
+                scenes: [], // Cada mundo já nasce com sua própria lista de cenas vazia!
+                metadata: {
+                    description: "",
+                    properties:{}
+                }
+            };
+
+            // 1. Adiciona o mundo na lista
+            worlds.push(newWorldData);
+
+            // 2. Define o mundo como ativo PRIMEIRO para o createScene achar ele
+            session.world.navigation.activeWorldId = newId;
+
+            // 3. Agora cria a cena inicial vinculada a este mundo ativo
+            const sceneResult = this.createScene(session, newId);
+        
+            if (sceneResult.success) {
+                session.world.navigation.activeSceneId = sceneResult.data.meta.id;
+            }
+
+            session.isModified = true;
+
+            console.log(`[WorldService] Novo mundo criado com sucesso: ${name} (ID: ${newId})`);
+            console.log(worlds);
+
+            return {
+                success: true,
+                message: "Mundo criado com sucesso no service.",
+                data: newWorldData
+            };
+
+        } catch (error) {
+            console.error("[WorldService] Erro ao criar novo mundo:", error);
+            return {
+                success: false,
+                message: `Erro interno no service ao criar mundo: ${error.message}`,
+                data: null
+            };
+        }
+    }
+
+    createScene(session, worldId = 0, columns = 20, rows = 15) {
         try {
             const activeWorldId = session.world.navigation.activeWorldId;
             if (activeWorldId === null) {
@@ -83,7 +143,7 @@ export default class SceneService {
 
             // Joga direto no Cache da Sessão atualizado
             session.world.scenes.cache.set(newId, {
-                mapDataModel: newMapModel,
+                data: newMapModel,
                 fileName: newFileName,
                 isModified: true
             });
@@ -92,7 +152,7 @@ export default class SceneService {
             session.world.navigation.activeSceneId = newId;
             session.isModified = true;
 
-            console.log(`[SceneService] Nova cena criada em cache: ${newName} no mundo ID ${activeWorldId}`);
+            console.log(`[worldService] Nova cena criada em cache: ${newName} no mundo ID ${activeWorldId}`);
             
             return {
                 success: true,
@@ -101,7 +161,7 @@ export default class SceneService {
             };
 
         } catch (error) {
-            console.error("[SceneService] Erro ao criar nova cena:", error);
+            console.error("[worldService] Erro ao criar nova cena:", error);
             return {
                 success: false,
                 message: `Erro interno no service ao criar cena: ${error.message}`,
@@ -153,7 +213,7 @@ export default class SceneService {
             } else {
                 // Se a cena não estava carregada no cache, injetamos ela lá só com a flag de deleção
                 session.world.scenes.cache.set(sceneId, {
-                    mapDataModel: null,
+                    data: null,
                     isDeleted: true,
                     isModified: true
                 });
@@ -167,7 +227,7 @@ export default class SceneService {
             // Marca o projeto como modificado para acionar o botão de salvar
             session.isModified = true;
 
-            console.log(`[SceneService] Cena ID ${sceneId} marcada para exclusão no cache.`);
+            console.log(`[worldService] Cena ID ${sceneId} marcada para exclusão no cache.`);
             
             return {
                 success: true,
@@ -176,7 +236,7 @@ export default class SceneService {
             };
 
         } catch (error) {
-            console.error("[SceneService] Erro ao marcar cena para exclusão:", error);
+            console.error("[worldService] Erro ao marcar cena para exclusão:", error);
             return {
                 success: false,
                 message: `Erro interno no service ao deletar cena: ${error.message}`,
@@ -195,8 +255,8 @@ export default class SceneService {
         try {
             // 1. Verifica se já está no cache da sessão para evitar leitura desnecessária do disco
             const cachedScene = session.world.scenes.cache.get(sceneId);
-            if (cachedScene && cachedScene.mapDataModel) {
-                console.log(`[SceneService] Cena ID ${sceneId} encontrada no cache.`);
+            if (cachedScene && cachedScene.data) {
+                console.log(`[worldService] Cena ID ${sceneId} encontrada no cache.`);
                 return {
                     success: true,
                     message: "Cena recuperada do cache com sucesso.",
@@ -215,7 +275,7 @@ export default class SceneService {
             }
 
             const { scene: sceneMeta } = result;
-            console.log(`[SceneService] Carregando cena: ${sceneMeta.name} (${sceneMeta.fileName})`);
+            console.log(`[worldService] Carregando cena: ${sceneMeta.name} (${sceneMeta.fileName})`);
 
             // 3. Monta o caminho usando o rootPath da sessão
             const rootPath = session.rootPath;
@@ -244,12 +304,12 @@ export default class SceneService {
 
             // 5. Guarda no cache da sessão para as próximas consultas
             session.world.scenes.cache.set(sceneId, {
-                mapDataModel: mapModel,
+                data: mapModel,
                 isModified: false,
                 isDeleted: false
             });
 
-            console.log("[SceneService] MapDataModel instanciado e cacheado com sucesso.");
+            console.log("[worldService] MapDataModel instanciado e cacheado com sucesso.");
             return {
                 success: true,
                 message: "Cena carregada do disco com sucesso.",
@@ -257,7 +317,7 @@ export default class SceneService {
             };
 
         } catch (error) {
-            console.error("[SceneService] Erro ao carregar a cena do disco:", error);
+            console.error("[worldService] Erro ao carregar a cena do disco:", error);
             return {
                 success: false,
                 message: `Erro interno no service ao carregar cena: ${error.message}`,

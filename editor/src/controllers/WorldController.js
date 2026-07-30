@@ -1,11 +1,45 @@
 
-import ProjectStore from "../store/ProjectStore";
-import SceneService from "../services/SceneService";
+import ProjectStore from "../state/ProjectStore";
+import worldService from "../services/worldService";
+import { eventBus } from "../state/EventBus";
 
-export default class SceneController {
-    constructor(projectStore, sceneService) {
+export default class WorldController {
+    constructor(projectStore, worldService) {
         this.projectStore = projectStore;
-        this.sceneService = sceneService;
+        this.worldService = worldService;
+    }
+
+    async createWorld(worldName = null) {
+        try {
+            const session = this.projectStore.getSession();
+
+            // O service de mundo faz o trabalho pesado e devolve o contrato padrão
+            const serviceResult = this.worldService.createWorld(session, worldName);
+
+            // Se o service falhou, repassa a mensagem exata de lá
+            if (!serviceResult.success) {
+                return {
+                    success: false,
+                    message: serviceResult.message,
+                    data: null
+                };
+            }
+
+            eventBus.notify('worldsListUpdated');
+
+            return {
+                success: true,
+                message: "Mundo criado com sucesso.",
+                data: serviceResult.data // Retorna os dados do novo mundo criado
+            };
+
+        } catch (error) {
+            return {
+                success: false,
+                message: `Erro no controller ao criar mundo: ${error.message}`,
+                data: null
+            };
+        }
     }
 
     async createScene(worldId, columns, rows) {
@@ -13,7 +47,7 @@ export default class SceneController {
             const session = this.projectStore.getSession();
 
             // O service agora já devolve o nosso contrato!
-            const serviceResult = this.sceneService.create(session, columns, rows);
+            const serviceResult = this.worldService.createScene(session, worldId, columns, rows);
 
             // Se o service falhou, repassa a mensagem exata de lá
             if (!serviceResult.success) {
@@ -40,7 +74,7 @@ export default class SceneController {
     }
 
     /**
-     * Deleta uma cena chamando o SceneService.
+     * Deleta uma cena chamando o worldService.
      * @param {string|number} sceneId - ID da cena a ser deletada.
      */
     async deleteScene(sceneId) {
@@ -56,7 +90,7 @@ export default class SceneController {
             const session = this.projectStore.getSession();
 
             // O service agora retorna o nosso contrato padronizado
-            const serviceResult = this.sceneService.delete(session, sceneId);
+            const serviceResult = this.worldService.delete(session, sceneId);
 
             // Se o service falhou, repassamos a mensagem exata de lá
             if (!serviceResult.success) {
@@ -108,7 +142,7 @@ export default class SceneController {
             }
 
             // Delega para o service e recebe o objeto de contrato padronizado
-            const serviceResult = await this.sceneService.getById(session, activeWorldId, sceneId);
+            const serviceResult = await this.worldService.getById(session, activeWorldId, sceneId);
 
             if (!serviceResult.success) {
                 return {
@@ -179,8 +213,8 @@ export default class SceneController {
         try {
             const session = this.projectStore.getSession();
 
-            // 1. Usa o SceneService para buscar a cena no disco/cache
-            const sceneModel = await this.sceneService.getById(session, worldId, sceneId);
+            // 1. Usa o worldService para buscar a cena no disco/cache
+            const sceneModel = await this.worldService.getById(session, worldId, sceneId);
 
             if (!sceneModel) {
                 return {

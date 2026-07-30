@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import './WorldsTab.css';
 
-export default function WorldsTab({ projectController, uiController, onSelectMap }) {
+export default function WorldsTab({ projectController, uiController }) {
     const [expandedMaps, setExpandedMaps] = useState(true);
-    const [isCreating, setIsCreating] = useState(false);
-    const [mapsList, setMapsList] = useState([]);
+    const [isCreating, setIsCreating] = useState(false); // Corrigido para false inicialmente, senão o botão nasce desativado!
+    const [worldsList, setWorldsList] = useState([]); // Nome do setter corrigido
 
     useEffect(() => {
         if (!uiController || !projectController) return;
 
-        const updateMaps = () => {
+        const updateWorldsList = () => {
             if (projectController.mapManager && projectController.mapManager.mapsList) {
                 const list = projectController.mapManager.mapsList;
-                console.log("[MapsTab] Mapas encontrados no MapManager:", list);
-                setMapsList([...list]);
+                console.log("[WorldsTab] Mapas encontrados no MapManager:", list);
+                setWorldsList([...list]);
             }
         };
 
-        // Tenta carregar caso o projeto já estivesse aberto antes de montar a aba
-        updateMaps();
+        updateWorldsList();
 
-        // Se inscreve no evento do UIController
+        // Nome do evento corrigido para 'projectLoaded'
         const unsubscribe = uiController.subscribe('projectLoaded', () => {
-            console.log("[MapsTab] Evento 'projectLoaded' recebido! Atualizando lista...");
-            updateMaps();
+            console.log("[WorldsTab] Evento 'projectLoaded' recebido! Atualizando lista de mapas");
+            updateWorldsList();
         });
 
-        const unsubscribeMaps = uiController.subscribe('mapsListUpdated', updateMaps);
+        const unsubscribeMaps = uiController.subscribe('worldsListUpdated', updateWorldsList);
 
         return () => {
             unsubscribe();
@@ -37,17 +36,33 @@ export default function WorldsTab({ projectController, uiController, onSelectMap
     const handleCreateNewMap = async () => {
         if (isCreating) return;
         setIsCreating(true);
-        
+
         await projectController.createNewMap();
         
         if (projectController.mapManager) {
-            setMapsList([...projectController.mapManager.mapsList]);
+            setWorldsList([...projectController.mapManager.mapsList]);
         }
+
         if (uiController) {
-            uiController.notifyListeners('mapsListUpdated');
+            uiController.notifyListeners('worldsListUpdated'); // Corrigido para notifyListeners
         }
-        
+
         setIsCreating(false);
+    };
+
+    const handleSelectMap = async (mapId) => {
+        if (!projectController) return;
+
+        console.log(`[WorldsTab] Selecionando e carregando mapa ID: ${mapId}`); // Corrigida a interpolação
+
+        if (typeof projectController.setCurrentMap === 'function') {
+            await projectController.setCurrentMap(mapId); // Adicionado await caso a troca seja assíncrona
+        }
+
+        // Notifica todos os ouvintes que o mapa ativo mudou
+        if (uiController) {
+            uiController.notifyListeners('mapChanged'); // Corrigido para notifyListeners
+        }
     };
 
     return (
@@ -70,19 +85,19 @@ export default function WorldsTab({ projectController, uiController, onSelectMap
                         >
                             {isCreating ? 'Criando...' : '+ Novo Mapa'}
                         </button>
-                        
+
                         <ul className="sidebar-list">
-                            {mapsList.map((mapItem, idx) => {
-                                // Proteção para extrair o nome corretamente independente da estrutura do objeto
+                            {worldsList.map((mapItem, idx) => {
                                 const fileName = mapItem.fileName || mapItem.name || mapItem;
                                 const displayName = typeof fileName === 'string' ? fileName.replace('.json', '') : `Mapa ${idx + 1}`;
-                                const isSelected = projectController?.getCurrentMap()?.name === displayName;
+                                const currentMap = projectController?.getCurrentMap ? projectController.getCurrentMap() : null;
+                                const isSelected = currentMap?.name === displayName || currentMap?.fileName === fileName || currentMap?.id === mapItem.id;
 
                                 return (
                                     <li 
                                         key={idx} 
                                         className={`sidebar-item ${isSelected ? 'active' : ''}`}
-                                        onClick={() => onSelectMap && onSelectMap(fileName)}
+                                        onClick={() => handleSelectMap(mapItem.id || fileName)}
                                     >
                                         <span className="map-name">🗺️ {displayName}</span>
                                         

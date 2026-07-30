@@ -1,103 +1,134 @@
-/* Faz os botões de ação aparecerem apenas no hover do item */
-.sidebar-item {
+/* editor/src/components/SidePanel/WorldsTab/WorldsTab.css */
+
+.worlds-tab-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Cada Seção (Mundos / Cenas) */
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Divide o espaço vertical proporcionalmente entre as duas seções */
+    min-height: 120px;
+    border-bottom: 1px solid var(--border-color, #2d2d2d);
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+}
+
+/* Cabeçalho Retrátil da Seção (Acordeão) */
+.sidebar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-}
-
-.map-actions {
-    display: none;
-    gap: 4px;
-}
-
-.sidebar-item:hover .map-actions {
-    display: flex;
-}
-
-.map-actions button {
-    background: transparent;
-    border: none;
-    cursor: pointer;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.02);
     font-size: 11px;
-    padding: 2px 4px;
-    border-radius: 3px;
-}
-
-.map-actions button:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-/* Estilo do Menu de Contexto (Botão Direito) */
-.context-menu {
-    position: fixed;
-    background-color: #252526;
-    border: 1px solid #454545;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-    list-style: none;
-    padding: 4px 0;
-    margin: 0;
-    z-index: 1000;
-    border-radius: 4px;
-    min-width: 130px;
-}
-
-.context-menu li {
-    padding: 6px 12px;
-    font-size: 12px;
-    color: #cccccc;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary, #bbbbbb);
     cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    user-select: none;
 }
 
-.context-menu li:hover {
-    background-color: #094771;
+.sidebar-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary, #ffffff);
+}
+
+/* Conteúdo interno da Seção */
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 8px;
+    overflow-y: auto;
+}
+
+/* Botão de Ação (+ Novo Mundo / + Nova Cena) */
+.sidebar-btn-action {
+    background-color: transparent;
+    border: 1px dashed var(--border-color, #444444);
+    color: var(--text-primary, #cccccc);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.sidebar-btn-action:hover:not(:disabled) {
+    background-color: var(--accent-color, #007acc);
+    border-color: var(--accent-color, #007acc);
     color: #ffffff;
 }
 
-.context-menu hr {
-    border: none;
-    border-top: 1px solid #333333;
-    margin: 4px 0;
+.sidebar-btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.context-menu li.danger:hover {
-    background-color: #a1260d;
+/* Listas de Itens */
+.sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-/* Ajusta o item da lista deixando-o mais compacto e com o cursor de mãozinha */
+/* Item individual da lista */
 .sidebar-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    position: relative;
-    padding: 4px 8px;      /* Reduzido de 8px 12px para ficar menos esparçado */
-    margin-bottom: 2px;    /* Reduzido para aproximar os mapas */
-    border-radius: 3px;
-    cursor: pointer;
-    color: #cccccc;
-    gap: 8px;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-/* Estilo padrão do nome do mapa */
-.map-name {
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 4px;
     font-size: 13px;
-    font-weight: 400;
-    transition: font-weight 0.15s ease, color 0.15s ease;
-}
-
-/* Efeito ao passar o mouse OU quando o item está selecionado (.active) */
-.sidebar-item:hover .map-name,
-.sidebar-item.active .map-name {
-    font-weight: bold;
-    color: #ffffff;
+    color: var(--text-primary, #cccccc);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
 }
 
 .sidebar-item:hover {
-    background-color: #2a2d2e; /* Mantém a cor de fundo padrão de hover estilo VS Code */
+    background-color: var(--bg-hover, #2a2d2e);
 }
 
-/* Garante o fundo destacado para o mapa selecionado */
 .sidebar-item.active {
-    background-color: #37373d; /* Tom clássico de seleção ativa */
+    background-color: var(--bg-active, #37373d);
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Estados vazios */
+.sidebar-empty {
+    font-size: 12px;
+    color: var(--text-muted, #777777);
+    text-align: center;
+    padding: 12px;
+    font-style: italic;
+}
+
+/* Scrollbars customizadas e discretas */
+.sidebar-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }

@@ -1,44 +1,44 @@
-
 import React, { useState, useEffect } from 'react';
 import WorldsTab from './WorldsTab/WorldsTab.jsx';
 import LayersTab from './LayersTab/LayersTab.jsx';
+import { eventBus } from '../../state/EventBus.js'; // <-- Importa o EventBus global
 import './SidePanel.css';
 
 export default function SidePanel({ 
     projectController, 
-    uiController, 
+    projectStore, 
+    worldController,
     activeTab,
     setActiveTab 
 }) {
-    const [, setRenderTrigger] = useState(0); // Estado gatilho para forçar o React a re-renderizar
+    const [, setRenderTrigger] = useState(0);
 
     useEffect(() => {
-        if (!uiController) return;
-
-        const handleRefreshUI = () => {
-            console.log("[SidePanel] Atualizando painel...");
-            setRenderTrigger(prev => prev + 1); // Força um novo ciclo de renderização
+        const handleRefreshUI = (data) => {
+            console.log("[SidePanel] Evento recebido, atualizando painel...", data);
+            setRenderTrigger(prev => prev + 1);
         };
 
-        // Escuta os eventos globais do editor
-        const unsubProject = uiController.subscribe('projectLoaded', handleRefreshUI);
-        const unsubMapChanged = uiController.subscribe('mapChanged', handleRefreshUI);
-        const unsubMapsList = uiController.subscribe('worldsListUpdated', handleRefreshUI);
+        // Inscreve nos eventos específicos que interessam a este painel
+        const unsubProject = eventBus.subscribe('projectLoaded', handleRefreshUI);
+        const unsubSceneChanged = eventBus.subscribe('sceneChanged', handleRefreshUI);
+        const unsubWorldsList = eventBus.subscribe('worldsListUpdated', handleRefreshUI);
 
         return () => {
+            // Limpa as inscrições quando o componente desmontar
             unsubProject();
-            unsubMapChanged();
-            unsubMapsList();
+            unsubSceneChanged();
+            unsubWorldsList();
         };
-    }, [uiController]);
+    }, []);
 
     return (
         <div className="sidebar-left">
             {/* Cabeçalho de Abas da Sidebar Esquerda */}
             <div className="sidebar-tabs-header">
                 <button 
-                    className={`tab-btn ${activeTab === 'maps' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('maps')}
+                    className={`tab-btn ${activeTab === 'worlds' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('worlds')}
                 >
                     Mundos
                 </button>
@@ -48,21 +48,34 @@ export default function SidePanel({
                 >
                     Camadas
                 </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'events' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('events')}
+                >
+                    Eventos
+                </button>
             </div>
 
             {/* Conteúdo Dinâmico Baseado na Aba Ativa */}
             <div className="sidebar-tab-content">
-                {activeTab === 'maps' && (
+                {activeTab === 'worlds' && (
                     <WorldsTab 
                         projectController={projectController} 
-                        uiController={uiController}
+                        projectStore={projectStore}
+                        worldController={worldController}
                     />
                 )}
 
                 {activeTab === 'layers' && (
                     <LayersTab 
                         projectController={projectController}
-                        uiController={uiController}
+                        projectStore={projectStore}
+                    />
+                )}
+                {activeTab === 'events' && (
+                    <EventsTab 
+                        projectController={projectController}
+                        projectStore={projectStore}
                     />
                 )}
             </div>

@@ -1,5 +1,6 @@
 
 import { Modal } from "../ui/modals/Modal";
+import { eventBus } from "../state/EventBus";
 /**
  * src/handlers/projectHandlers.js
  * 
@@ -85,6 +86,8 @@ export function createProjectHandlers(projectController, sceneController, projec
                             data: null
                     };
                 }
+
+                eventBus.notify('projectLoaded', openResult.data);
 
                 console.log("Projeto aberto com sucesso! Orquestrando carregamento da cena...");
             

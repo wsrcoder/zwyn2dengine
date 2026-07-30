@@ -19,6 +19,8 @@ export default class ProjectStore {
                 scenes: new SceneState(),
             }            
         };
+
+        this.listeners = new Set();
     }
 
     /**

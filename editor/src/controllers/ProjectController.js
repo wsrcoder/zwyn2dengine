@@ -1,6 +1,6 @@
 
 
-import ProjectStore from '../store/ProjectStore.js';
+import ProjectStore from '../state/ProjectStore.js';
 import ProjectService from '../services/ProjectService.js';
 
 export default class ProjectController {

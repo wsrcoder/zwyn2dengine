@@ -1,125 +1,57 @@
-/* Container principal da barra lateral esquerda */
+/* editor/src/components/SidePanel/SidePanel.css */
+
 .sidebar-left {
     display: flex;
     flex-direction: column;
-    background-color: #1e1e1e;
-    border-right: 1px solid #333333;
-    height: 100%;
-    overflow: hidden;
+    width: var(--sidebar-width, 280px);
+    height: 100vh; /* Ocupa toda a altura da tela */
+    background-color: var(--bg-surface, #1e1e1e);
+    border-right: 1px solid var(--border-color, #2d2d2d);
+    color: var(--text-primary, #cccccc);
+    font-family: var(--font-family, sans-serif);
+    user-select: none;
+    box-sizing: border-box;
 }
 
-/* Cabeçalho de abas da Sidebar */
+/* Cabeçalho de Abas */
 .sidebar-tabs-header {
     display: flex;
-    background-color: #252526;
-    border-bottom: 1px solid #333333;
+    background-color: var(--bg-header, #252526);
+    border-bottom: 1px solid var(--border-color, #2d2d2d);
+    flex-shrink: 0;
 }
 
-.sidebar-tabs-header .tab-btn {
+.tab-btn {
     flex: 1;
     padding: 10px 8px;
     background: transparent;
-    color: #858585;
     border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    font-size: 13px;
+    color: var(--text-secondary, #858585);
+    font-size: 12px;
     font-weight: 500;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
 }
 
-.sidebar-tabs-header .tab-btn:hover {
-    background-color: #2a2d2e;
-    color: #cccccc;
+.tab-btn:hover {
+    color: var(--text-primary, #ffffff);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
-.sidebar-tabs-header .tab-btn.active {
-    background-color: #1e1e1e;
-    color: #ffffff;
-    border-bottom-color: #007acc; /* Padrão estilo VS Code / Editores profissionais */
+.tab-btn.active {
+    background-color: var(--bg-surface, #1e1e1e);
+    color: var(--text-active, #ffffff);
+    border-bottom-color: var(--accent-color, #007acc);
 }
 
-/* Área de conteúdo dinâmico (onde as abas são renderizadas) */
+/* Área de Conteúdo que envolve as Tabs */
 .sidebar-tab-content {
     flex: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-}
-
-/* Seções e cabeçalhos colapsáveis comuns (usados na aba de camadas, etc.) */
-.sidebar-section {
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-section .sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    background-color: #2d2d2d;
-    color: #cccccc;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    user-select: none;
-    border-bottom: 1px solid #333333;
-}
-
-.sidebar-section .sidebar-header:hover {
-    background-color: #383838;
-}
-
-.sidebar-content {
-    padding: 8px;
-}
-
-/* Estilos da Árvore de Camadas (Layers) */
-.layers-tree {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 8px;
-}
-
-.layer-category-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.layer-category-group .category-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    color: #858585;
-    padding: 2px 4px;
-    font-weight: bold;
-}
-
-.layer-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 10px;
-    background-color: #252526;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #cccccc;
-    font-size: 13px;
-    transition: background-color 0.2s;
-}
-
-.layer-item:hover {
-    background-color: #2a2d2e;
-}
-
-.layer-item.selected {
-    background-color: #37373d;
-    color: #ffffff;
-    border-left: 3px solid #007acc;
-}
-
-.layer-visibility {
-    font-size: 12px;
+    overflow: hidden; /* Evita estouro global, gerencia nas sub-abas */
+    background-color: var(--bg-surface, #1e1e1e);
 }
