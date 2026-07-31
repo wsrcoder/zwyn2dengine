@@ -4,6 +4,7 @@ import { MapDataModel } from '../models/MapDataModel/MapDataModel.js';
 
 import { ImageUtils } from '../utils/ImageUtils.js';
 import { JsonUtils } from '../utils/JsonUtils.js';
+import SceneState from '../state/SceneState.js';
 
 
 export default class ProjectService {
@@ -73,6 +74,7 @@ export default class ProjectService {
             // 6. Cria e salva o arquivo de dados da cena inicial no disco
             const defaultRawMap = {
                 id: defaultScene.id,
+                worldId: defaultWorld.id,
                 name: 'Scene' + defaultScene.id,
                 fileName: 'W' + defaultWorld.id + 'S' + defaultScene.id + '.json',
                 columns: defaultScene.columns || 20,
@@ -107,10 +109,10 @@ export default class ProjectService {
 
             // 7. Popula o cache global da sessão com a cena inicial (guardando a referência do worldId) e define a navegação na raiz
             if (!session.workingScenes) {
-                session.workingScenes = new Map();
+                session.workingScenes = new SceneState();
             }
 
-            session.workingScenes.set(defaultScene.id, {
+            session.workingScenes.setScene(defaultScene.id, {
                 worldId: defaultWorld.id, // Referência limpa de qual mundo essa cena pertence
                 data: initialMapModel,
                 fileName: defaultScene.fileName,
@@ -145,7 +147,7 @@ export default class ProjectService {
     /**
      * Lê apenas o project.json e inicializa o ProjectModel na sessão.
      */
-    async open(session, projectPath) {
+   async open(session, projectPath) {
         if (!projectPath) {
             return {
                 success: false,
@@ -189,10 +191,18 @@ export default class ProjectService {
             session.project = new ProjectModel(projectInfo);
             session.isModified = false;
 
-            // Limpa o estado/cache de cenas anterior
-            session.workingScenes.cache.clear();
-            session.navigation.activeWorldId = null;
-            session.navigation.activeSceneId = null;
+            // Garante que workingScenes existe e limpa o cache corretamente (Map nativo)
+            if (!session.workingScenes) {
+                session.workingScenes = new SceneState();
+            } else {
+                session.workingScenes.clear();
+            }
+
+            // Define a navegação inicial de forma inteligente:
+            // Se o projeto salvo tiver mundos, seleciona o primeiro automaticamente. Senão, deixa null.
+            const firstWorld = session.project.worlds && session.project.worlds.length > 0 ? session.project.worlds[0] : null;
+            session.navigation.activeWorldId = firstWorld ? firstWorld.id : null;
+            session.navigation.activeSceneId = null; // A cena ativa pode ser carregada sob demanda ou se houver padrão
 
             console.log("[ProjectService] project.json carregado com sucesso.");
 

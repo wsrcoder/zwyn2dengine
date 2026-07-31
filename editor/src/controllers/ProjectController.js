@@ -2,6 +2,9 @@
 
 import ProjectStore from '../state/ProjectStore.js';
 import ProjectService from '../services/ProjectService.js';
+import { EDITOR_EVENTS } from '../state/EventTypes.js';
+import { EventHandler } from '../state/EventBus.js';
+
 
 export default class ProjectController {
     constructor(projectStore, projectService) {
@@ -36,6 +39,10 @@ export default class ProjectController {
                     data: null
                 };
             }
+
+            // 🎯 O PONTO-CHAVE: Notifica o ecossistema que o projeto foi carregado/criado com sucesso!
+            // Assumindo que serviceResult.data traga o objeto do projeto ou que ele esteja na session
+            EventHandler.notify(EDITOR_EVENTS.PROJECT_LOADED);
 
             return {
                 success: true,
@@ -128,8 +135,10 @@ export default class ProjectController {
      * no projeto (metadados ou cenas abertas em cache).
      */
     hasUnsavedChanges() {
+
+        const session = this.projectStore.getSession();
         // 1. Verifica alterações no projeto geral
-        if (this.session.isModified) {
+        if (session.isModified) {
             return true;
         }
 

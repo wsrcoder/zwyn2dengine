@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "updatedAt": "2026-07-29T16:25:25.160Z"
+    "updatedAt": "2026-07-31T00:54:51.120Z"
   },
   "settings": {
     "projectName": "MeuProjeto",
@@ -19,8 +19,8 @@
   "worlds": [
     {
       "id": 1,
-      "name": "Mundo Principal",
-      "order": 0,
+      "name": "Main World",
+      "order": 1,
       "metadata": {
         "description": "",
         "properties": {}
@@ -28,8 +28,9 @@
       "scenes": [
         {
           "id": 1,
-          "name": "Map0001",
-          "fileName": "Map0000001.json",
+          "worldId": 1,
+          "name": "Scene1",
+          "fileName": "W1S1.json",
           "columns": 20,
           "rows": 15,
           "order": 0,

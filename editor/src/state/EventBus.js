@@ -27,9 +27,10 @@ export class EventBus {
     /**
      * Dispara um evento, notificando todos os ouvintes inscritos.
      * @param {string} event - Nome do evento
-     * @param {*} [data] - Dados opcionais a serem passados para os ouvintes
+     * @param {*} [data] - Dados opcionais a serem passados para os ouvintes. voce pode
+     * passar apenas o identifcador do evento ou passar tambem os dados se houver necessidade
      */
-    notify(event, data) {
+    notify(event, data = null) {
         console.log(`[EventBus] Evento disparado: "${event}"`, data !== undefined ? data : '');
         
         if (this.listeners[event]) {
@@ -45,4 +46,4 @@ export class EventBus {
 }
 
 // Exporta uma instância única global (Singleton) para toda a aplicação usar a mesma central
-export const eventBus = new EventBus();
+export const EventHandler = new EventBus();

@@ -1,8 +1,9 @@
 class SceneSectionModel {
   constructor(data = {}) {
     this.id = data.id ?? 1;
-    this.name = data.name ?? "Map0001";
-    this.fileName = data.fileName ?? `Map${String(this.id).padStart(4, '0')}.json`;
+    this.worldId = data.worldId ?? 1;
+    this.name = data.name ?? "Scene1";
+    this.fileName = data.fileName ?? `W${String(this.worldId)}S${this.id}.json`;
     this.columns = data.columns ?? 20;
     this.rows = data.rows ?? 15;
     this.order = data.order ?? 0;
@@ -14,6 +15,7 @@ class SceneSectionModel {
   toJSON() {
     return {
       id: this.id,
+      worldId: this.worldId,
       name: this.name,
       fileName: this.fileName,
       columns: this.columns,
@@ -27,7 +29,7 @@ class SceneSectionModel {
 class WorldSectionModel {
   constructor(data = {}) {
     this.id = data.id ?? 1;
-    this.name = data.name ?? "Novo Mundo";
+    this.name = data.name ?? `World${this.id}`;
     this.order = data.order ?? 0;
     this.metadata = {
       description: data.metadata?.description ?? "",
@@ -76,6 +78,7 @@ export default class ProjectModel {
 
       const initialScene = new SceneSectionModel({
         id: 1,
+        worldId: 1,
         name: "Scene1",
         fileName: "W1S1.json", // Ou use ProjectParams se preferir
         columns: defaultColumns,
@@ -85,6 +88,7 @@ export default class ProjectModel {
       const initialWorld = new WorldSectionModel({
         id: 1,
         name: "Main World",
+        order: 1,
         scenes: [initialScene]
       });
 

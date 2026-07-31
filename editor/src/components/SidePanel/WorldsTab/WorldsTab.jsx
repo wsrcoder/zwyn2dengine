@@ -1,9 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
-import { eventBus } from '../../../state/EventBus';
+import { EDITOR_EVENTS } from '../../../state/EventTypes';
+import { EventHandler } from '../../../state/EventBus';
+
 import './WorldsTab.css';
 
 export default function WorldsTab({ projectController, worldController, projectStore }) {
+    // Adicione um estado para saber se há projeto carregado
+    const [hasProject, setHasProject] = useState(false);
+
     const [expandedWorlds, setExpandedWorlds] = useState(true);
     const [expandedScenes, setExpandedScenes] = useState(true);
 
@@ -19,19 +23,23 @@ export default function WorldsTab({ projectController, worldController, projectS
 
         const session = projectStore.session;
         
-        // 1. Pega a lista de mundos do projeto (verificando session.project ou session.project.worlds)
+        // 1. Pega a lista de mundos do projeto
         const projectData = session.project;
+
+        // Define se existe um projeto ativo válido
+        setHasProject(!!projectData);
+
         const worlds = projectData?.worlds || [];
         setWorldsList([...worlds]);
 
-        // 2. Pega os IDs ativos direto da raiz da navegação (session.navigation)
+        // 2. Pega os IDs ativos direto da raiz da navegação
         const currentWorldId = session.navigation?.activeWorldId;
         const currentSceneId = session.navigation?.activeSceneId;
         
         setActiveWorldId(currentWorldId);
         setActiveSceneId(currentSceneId);
 
-        // 3. Se houver um mundo ativo, extrai as cenas dele para a lista inferior
+        // 3. Se houver um mundo ativo, extrai as cenas dele
         if (currentWorldId !== undefined && currentWorldId !== null) {
             const activeWorldObj = worlds.find(w => w.id === currentWorldId || w.name === currentWorldId);
             setScenesList(activeWorldObj?.scenes || []);
@@ -44,13 +52,15 @@ export default function WorldsTab({ projectController, worldController, projectS
         syncFromStore();
 
         // Inscreve nos eventos do EventBus para manter a interface reativa
-        const unsubProject = eventBus.subscribe('projectLoaded', syncFromStore);
-        const unsubWorldsList = eventBus.subscribe('worldsListUpdated', syncFromStore);
-        const unsubSceneChanged = eventBus.subscribe('sceneChanged', syncFromStore);
-        const unsubWorldChanged = eventBus.subscribe('worldChanged', syncFromStore);
+        const unsubProjectLoaded = EventHandler.subscribe(EDITOR_EVENTS.PROJECT_LOADED, syncFromStore);
+        const unsubProjectClosed = EventHandler.subscribe(EDITOR_EVENTS.PROJECT_CLOSED, syncFromStore);
+        const unsubWorldsList = EventHandler.subscribe(EDITOR_EVENTS.WORLDS_LIST_UPDATED, syncFromStore);
+        const unsubSceneChanged = EventHandler.subscribe(EDITOR_EVENTS.SCENE_CHANGED, syncFromStore);
+        const unsubWorldChanged = EventHandler.subscribe(EDITOR_EVENTS.WORLD_CHANGED, syncFromStore);
 
         return () => {
-            unsubProject();
+            unsubProjectLoaded();
+            unsubProjectClosed();
             unsubWorldsList();
             unsubSceneChanged();
             unsubWorldChanged();
@@ -63,10 +73,9 @@ export default function WorldsTab({ projectController, worldController, projectS
         if (projectController && typeof projectController.setActiveWorld === 'function') {
             await projectController.setActiveWorld(worldId);
         } else {
-            // Fallback direto na session atualizada para a raiz
             projectStore.session.navigation.activeWorldId = worldId;
         }
-        eventBus.notify('worldChanged', worldId);
+
         syncFromStore();
     };
 
@@ -74,7 +83,7 @@ export default function WorldsTab({ projectController, worldController, projectS
         console.log("[WorldsTab] Criando novo mundo...");
         if (worldController && typeof worldController.createWorld === 'function') {
             await worldController.createWorld();
-            eventBus.notify('worldsListUpdated');
+
             syncFromStore();
         }
     };
@@ -87,7 +96,7 @@ export default function WorldsTab({ projectController, worldController, projectS
         } else {
             projectStore.session.navigation.activeSceneId = sceneId;
         }
-        eventBus.notify('sceneChanged', sceneId);
+    
         syncFromStore();
     };
 
@@ -95,7 +104,7 @@ export default function WorldsTab({ projectController, worldController, projectS
         console.log("[WorldsTab] Criando nova cena no mundo ativo...");
         if (projectController && typeof projectController.createScene === 'function') {
             await projectController.createScene();
-            eventBus.notify('sceneChanged');
+            
             syncFromStore();
         }
     };
@@ -115,7 +124,9 @@ export default function WorldsTab({ projectController, worldController, projectS
 
                 {expandedWorlds && (
                     <div className="sidebar-content">
-                        <button className="sidebar-btn-action" onClick={handleCreateWorld}>
+                        <button className="sidebar-btn-action" 
+                                onClick={handleCreateWorld}
+                                disabled={!hasProject}>
                             + Novo Mundo
                         </button>
 
@@ -159,7 +170,7 @@ export default function WorldsTab({ projectController, worldController, projectS
                         <button 
                             className="sidebar-btn-action" 
                             onClick={handleCreateScene}
-                            disabled={activeWorldId === null || activeWorldId === undefined}
+                            disabled={!hasProject || activeWorldId === null || activeWorldId === undefined}
                         >
                             + Nova Cena
                         </button>

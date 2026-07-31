@@ -1,5 +1,5 @@
 import ProjectModel from '../models/Project/ProjectModel.js';
-import SceneState from '../models/Project/SceneState.js'; // Ajuste o caminho se necessário
+import SceneState from './SceneState.js'; // Ajuste o caminho se necessário
 
 export default class ProjectStore {
     constructor() {
@@ -7,7 +7,7 @@ export default class ProjectStore {
         // O estado da sessão agora vive aqui dentro, blindado!
         this.session = {
             rootPath: null,
-            project: new ProjectModel(),
+            project: null,
             isModified: false,
             navigation: {
                     activeWorldId: null,
@@ -15,7 +15,7 @@ export default class ProjectStore {
             },
             // 2. O Cache de Cenas é GLOBAL na sessão, mapeando qualquer cena aberta em memória
             // Chave: ID da cena (ou 'W{worldId}S{sceneId}'), Valor: { mapDataModel, fileName, isModified }
-            workingScenes: new Map(),
+            workingScenes: new SceneState(),
            
         };
 

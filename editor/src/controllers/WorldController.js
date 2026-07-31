@@ -1,7 +1,8 @@
 
 import ProjectStore from "../state/ProjectStore";
 import worldService from "../services/worldService";
-import { eventBus } from "../state/EventBus";
+import { EventHandler } from "../state/EventBus";
+import { EDITOR_EVENTS } from "../state/EventTypes";
 
 export default class WorldController {
     constructor(projectStore, worldService) {
@@ -25,7 +26,7 @@ export default class WorldController {
                 };
             }
 
-            eventBus.notify('worldsListUpdated');
+            EventHandler.notify(EDITOR_EVENTS.WORLDS_LIST_UPDATED);
 
             return {
                 success: true,
@@ -57,6 +58,8 @@ export default class WorldController {
                     data: null
                 };
             }
+
+            EventHandler.notify(EDITOR_EVENTS.WORLDS_LIST_UPDATED);
 
             return {
                 success: true,

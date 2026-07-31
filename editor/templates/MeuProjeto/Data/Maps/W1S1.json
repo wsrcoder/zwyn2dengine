@@ -1,6 +1,6 @@
 {
   "id": 1,
-  "name": "Map0001",
+  "name": "Scene1",
   "columns": 20,
   "rows": 15,
   "tile": {
@@ -12,7 +12,7 @@
   "tilesets": [
     {
       "firstgid": 1,
-      "name": "TLS0000001",
+      "name": "TTD1",
       "tile": {
         "width": 32,
         "height": 32,
@@ -21,7 +21,7 @@
       "columns": 32,
       "rows": 32,
       "image": {
-        "fileName": "TLS0000001.png",
+        "fileName": "TTD1.png",
         "width": 1024,
         "height": 1024
       },

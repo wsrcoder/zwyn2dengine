@@ -1,5 +1,6 @@
 import {ProjectParams} from "../constants/ProjectParams";
 import { MapDataModel } from "../models/MapDataModel/MapDataModel";
+import SceneState from "../state/SceneState";
 
 
 export default class WorldService {
@@ -102,6 +103,7 @@ export default class WorldService {
 
             const newSceneMeta = {
                 id: newId,
+                worldId: world.id,
                 name: newName,
                 fileName: newFileName,
                 columns: columns,
@@ -114,6 +116,7 @@ export default class WorldService {
             const default_tileset = 'TTD1'; // Mantendo o mesmo padrão de tileset
             const defaultRawMap = {
                 id: newId,
+                worldId: world.id,
                 name: newName,
                 columns: columns,
                 rows: rows,
@@ -144,10 +147,10 @@ export default class WorldService {
 
             // Garante que o workingScenes existe na session
             if (!session.workingScenes) {
-                session.workingScenes = new Map();
+                session.workingScenes = new SceneState();
             }
 
-            session.workingScenes.set(newId, {
+            session.workingScenes.setScene(newId, {
                 worldId: world.id, // Referência limpa de qual mundo essa cena pertence
                 data: newMapModel,
                 fileName: newFileName,
@@ -213,17 +216,17 @@ export default class WorldService {
 
             // Garante que o Map de workingScenes existe
             if (!session.workingScenes) {
-                session.workingScenes = new Map();
+                session.workingScenes = new SceneState();
             }
 
             // Marca como deletada APENAS no cache da sessão (mantém o ProjectModel intacto até o Save)
-            let cachedScene = session.workingScenes.cache.get(sceneId);
+            let cachedScene = session.workingScenes.getSceneById(sceneId);
             if (cachedScene) {
                 cachedScene.isDeleted = true;
                 cachedScene.isModified = true;
             } else {
                 // Se a cena não estava carregada no cache, injetamos ela lá só com a flag de deleção
-                session.workingScenes.cache.set(sceneId, {
+                session.workingScenes.setScene(sceneId, {
                     worldId: world.id,
                     fileName: sceneExists.fileName,
                     data: null,
@@ -270,11 +273,11 @@ export default class WorldService {
 
             // Garante que o Map de workingScenes existe na sessão
             if (!session.workingScenes) {
-                session.workingScenes = new Map();
+                session.workingScenes = new SceneState();
             }
 
             // 1. Verifica se já está no cache da sessão para evitar leitura desnecessária do disco
-            const cachedScene = session.workingScenes.get(sceneId);
+            const cachedScene = session.workingScenes.getSceneById(sceneId);
             if (cachedScene && cachedScene.data) {
                 console.log(`[worldService] Cena ID ${sceneId} encontrada no cache.`);
                 return {
@@ -323,7 +326,7 @@ export default class WorldService {
             const mapModel = new MapDataModel(rawData);
 
             // 5. Guarda no cache da sessão para as próximas consultas
-            session.workingScenes.cache.set(sceneId, {
+            session.workingScenes.setScene(sceneId, {
                 worldId: worldId,
                 fileName: sceneMeta.fileName,
                 data: mapModel,

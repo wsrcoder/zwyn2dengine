@@ -1,6 +1,6 @@
 
 import { Modal } from "../ui/modals/Modal";
-import { eventBus } from "../state/EventBus";
+import SceneState from "../state/SceneState";
 /**
  * src/handlers/projectHandlers.js
  * 
@@ -44,6 +44,7 @@ export function createProjectHandlers(projectController, worldController, projec
             if (!createResult.success) {
                 return { success: false, message: createResult.message, data: null };
             }
+
 
             console.log("[Handler] Novo projeto criado e estruturado com sucesso!");
             return {
@@ -119,11 +120,11 @@ export function createProjectHandlers(projectController, worldController, projec
 
                     // Garante que o Map de workingScenes existe antes de dar o set
                     if (!session.workingScenes) {
-                        session.workingScenes = new Map();
+                        session.workingScenes = new SceneState();
                     }
 
                     // Popula o workingScenes utilizando os dados reais retornados pelo sceneResult
-                    session.workingScenes.set(firstScene.id, {
+                    session.workingScenes.setScene(firstScene.id, {
                         worldId: firstWorld.id, // Referência limpa de qual mundo essa cena pertence
                         data: sceneResult.data, // O MapDataModel parseado do disco
                         fileName: firstScene.fileName,
@@ -173,7 +174,34 @@ export function createProjectHandlers(projectController, worldController, projec
     const handleCloseProject = async () => {
         console.log("[Handler] Fluxo de Fechar Projeto chamado.");
         try {
-            // Lógica para fechar projeto atual e limpar store
+            const session = projectStore.getSession();
+            if (session && session.isModified) {
+                const confirmExit = await Modal.confirm(
+                    "Alterações não salvas", 
+                    "Você tem alterações não salvas. Deseja sair sem salvar?"
+                );
+        
+                if (!confirmExit) {
+                    return {
+                        success: false,
+                        message: "Fechamento cancelado pelo usuário.",
+                        data: null
+                    };
+                }
+            }
+
+            // Executa o fechamento na store através do controller
+            const result = await projectController.close();
+
+            if (!result.success) {
+                return {
+                    success: false,
+                    message: result.message || "Não foi possível fechar o projeto.",
+                    data: null
+                };
+            }
+
+            console.log("[Handler] Projeto fechado com sucesso na store.");
             return {
                 success: true,
                 message: "Projeto fechado com sucesso.",
