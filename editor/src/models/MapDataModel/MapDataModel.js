@@ -5,6 +5,7 @@ import { TilesetModel } from "./TilesetModel.js";
 export class MapDataModel {
     constructor(rawJsonData) {
         this.id = rawJsonData.id;
+        this.worldId = rawJsonData.worldId;
         this.name = rawJsonData.name;
         this.columns = rawJsonData.columns;
         this.rows = rawJsonData.rows;
@@ -79,6 +80,7 @@ export class MapDataModel {
     toJSON() {
         return {
             id: this.id,
+            worldId: this.worldId,
             name: this.name,
             columns: this.columns,
             rows: this.rows,

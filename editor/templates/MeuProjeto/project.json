@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "updatedAt": "2026-07-31T04:43:43.495Z"
+    "updatedAt": "2026-07-31T05:06:12.500Z"
   },
   "settings": {
     "projectName": "MeuProjeto",
@@ -97,16 +97,42 @@
           "metadata": {
             "properties": {}
           }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Mundo 002",
+      "scenes": [
+        {
+          "id": 1,
+          "worldId": 2,
+          "name": "Scene1",
+          "fileName": "W2S1.json",
+          "columns": 20,
+          "rows": 15
         },
         {
-          "id": 7,
-          "worldId": 1,
-          "name": "Scene7",
-          "fileName": "W1S7.json",
+          "id": 2,
+          "worldId": 2,
+          "name": "Scene2",
+          "fileName": "W2S2.json",
+          "columns": 20,
+          "rows": 20
+        },
+        {
+          "id": 3,
+          "worldId": 2,
+          "name": "Scene3",
+          "fileName": "W2S3.json",
           "columns": 20,
           "rows": 20
         }
-      ]
+      ],
+      "metadata": {
+        "description": "",
+        "properties": {}
+      }
     }
   ]
 }

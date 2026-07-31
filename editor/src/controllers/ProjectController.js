@@ -5,6 +5,8 @@ import ProjectService from '../services/ProjectService.js';
 import { EDITOR_EVENTS } from '../state/EventTypes.js';
 import { EventHandler } from '../state/EventBus.js';
 
+import { JsonUtils } from '../utils/JsonUtils.js';
+
 
 export default class ProjectController {
     constructor(projectStore, projectService) {
@@ -209,10 +211,15 @@ export default class ProjectController {
                     }
 
                     const mapFilePath = `${session.rootPath}/Data/Maps/${fileName}`;
-                    const mapData = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
+        
+                    // 1. Converte o model para objeto plano JSON
+                    const mapDataObj = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
+        
+                    // 2. Aplica o JsonUtils para compactar os arrays (ex: "data": [...]) em uma única linha
+                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(mapDataObj, ["data"]);
 
-
-                    await window.electronAPI.saveJsonFile(mapFilePath, mapData);
+                    // 3. Salva como texto no disco, preservando a formatação customizada
+                    await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
 
                     // Localiza a entrada original no cache para resetar a flag
                     const originalEntry = session.workingScenes.getSceneById(sceneId);
