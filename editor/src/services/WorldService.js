@@ -97,9 +97,8 @@ export default class WorldService {
 
             // Calcula o ID com base nas cenas do mundo ativo
             const newId = world.scenes.length > 0 ? Math.max(...world.scenes.map(m => m.id)) + 1 : 1;
-            const paddedId = String(newId).padStart(ProjectParams.MAX_MAP_INTERVAL, '0');
-            const newName = `Scene${paddedId}`;
-            const newFileName = `W${world.id}S${paddedId}.json`;
+            const newName = `Scene${newId}`;
+            const newFileName = `W${world.id}S${newId}.json`;
 
             const newSceneMeta = {
                 id: newId,
@@ -154,7 +153,7 @@ export default class WorldService {
                 worldId: world.id, // Referência limpa de qual mundo essa cena pertence
                 data: newMapModel,
                 fileName: newFileName,
-                isModified: false,
+                isModified: true,
                 isDeleted: false
             });
 
@@ -184,7 +183,7 @@ export default class WorldService {
     * A cena some da interface, mas seus dados e o ProjectModel 
     * permanecem intactos até que o projeto seja salvo de fato.
     */
-    delete(session, sceneId) {
+    deleteScene(session, sceneId) {
         try {
             const activeWorldId = session.navigation?.activeWorldId;
             if (activeWorldId === null || activeWorldId === undefined) {
@@ -278,6 +277,8 @@ export default class WorldService {
 
             // 1. Verifica se já está no cache da sessão para evitar leitura desnecessária do disco
             const cachedScene = session.workingScenes.getSceneById(sceneId);
+            console.log("cachedScene");
+            console.log(cachedScene);
             if (cachedScene && cachedScene.data) {
                 console.log(`[worldService] Cena ID ${sceneId} encontrada no cache.`);
                 return {

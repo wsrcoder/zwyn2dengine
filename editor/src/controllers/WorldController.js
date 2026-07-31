@@ -43,7 +43,7 @@ export default class WorldController {
         }
     }
 
-    async createScene(worldId, columns, rows) {
+    async createScene(worldId, columns=20, rows=15) {
         try {
             const session = this.projectStore.getSession();
 
@@ -134,7 +134,7 @@ export default class WorldController {
 
         try {
             const session = this.projectStore.getSession();
-            const activeWorldId = session.world.navigation.activeWorldId;
+            const activeWorldId = session.navigation.activeWorldId;
 
             if (activeWorldId === null) {
                 return {
@@ -145,8 +145,9 @@ export default class WorldController {
             }
 
             // Delega para o service e recebe o objeto de contrato padronizado
-            const serviceResult = await this.worldService.getById(session, activeWorldId, sceneId);
+            const serviceResult = await this.worldService.getSceneById(session, activeWorldId, sceneId);
 
+            
             if (!serviceResult.success) {
                 return {
                     success: false,
@@ -154,6 +155,8 @@ export default class WorldController {
                     data: null
                 };
             }
+
+            EventHandler.notify(EDITOR_EVENTS.PROJECT_LOADED);
 
             return {
                 success: true,

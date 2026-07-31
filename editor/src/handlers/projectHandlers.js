@@ -83,12 +83,13 @@ export function createProjectHandlers(projectController, worldController, projec
                     };
                 }
 
-                eventBus.notify('projectLoaded', openResult.data);
                 console.log("Projeto aberto com sucesso! Orquestrando carregamento da cena...");
 
                 // 2. Handler assume a orquestração: pega os dados da Store e aciona a Cena
                 const session = projectStore.getSession();
                 const worlds = openResult.data.worlds;
+
+                
 
                 if (worlds && worlds.length > 0) {
                     const firstWorld = worlds[0];
@@ -104,6 +105,9 @@ export function createProjectHandlers(projectController, worldController, projec
 
                     // Pede para o Controller carregar e fazer parse do arquivo de mapa do disco
                     const sceneResult = await worldController.getSceneById(firstScene.id);
+
+                    console.log("sceneResult")/
+                    console.log(sceneResult);
 
                     if (!sceneResult.success) {
                         console.warn("[Handler] Falha ao carregar o mapa inicial:", sceneResult.message);
@@ -152,7 +156,41 @@ export function createProjectHandlers(projectController, worldController, projec
         }
     };
 
-    const handleSaveAs = async () => {
+    const handleSaveProject = async () => {
+        console.log("[Handler] Iniciando salvamento do projeto...");
+        try {
+            if (!projectController) {
+                return { success: false, message: "ProjectController não inicializado.", data: null };
+            }
+
+            const result = await projectController.save();
+
+            if (!result.success) {
+                return {
+                    success: false,
+                    message: result.message || "Falha ao salvar o projeto.",
+                    data: null
+                };
+            }
+
+            console.log("[Handler] Projeto salvo com sucesso!");
+            return {
+                success: true,
+                message: "Projeto salvo com sucesso.",
+                data: result.data
+            };
+
+        } catch (error) {
+            console.error("[Handler] Erro inesperado ao salvar projeto:", error);
+            return {
+                success: false,
+                message: error.message || "Erro inesperado ao salvar o projeto.",
+                data: null
+            };
+        }
+    };
+
+    const handleSaveProjectAs = async () => {
         console.log("[Handler] Fluxo de Salvar Como chamado.");
         try {
             // Lógica de Salvar Como...
@@ -255,7 +293,8 @@ export function createProjectHandlers(projectController, worldController, projec
     return {
         handleNewProject,
         handleOpenProject,
-        handleSaveAs,
+        handleSaveProject,
+        handleSaveProjectAs,
         handleCloseProject,
         handleExit
     };

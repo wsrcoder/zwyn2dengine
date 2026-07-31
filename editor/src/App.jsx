@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import TopMenu from './components/TopMenu/TopMenu';
+import TopMenuContainer from './components/TopMenu/TopMenuContainer';
 import ModalRoot from './ui/modals/ModalRoot';
 import SidePanel from './components/SidePanel/SidePanel';
 import { createProjectHandlers } from './handlers/projectHandlers';
@@ -32,12 +32,9 @@ export default function App() {
         <div className="app-container">
             {/* O TopMenu fica magrinho, só recebendo os eventos! */}
             <ModalRoot />
-            <TopMenu 
-                onNewProject={handlers.handleNewProject}
-                onOpenProject={handlers.handleOpenProject}
-                onSaveAs={handlers.handleSaveAs}
-                onCloseProject={handlers.handleCloseProject}
-                onExit={handlers.handleExit}
+            <TopMenuContainer 
+                projectStore={projectStore} 
+                handlers={handlers} 
             />
 
             <SidePanel 

@@ -44,7 +44,7 @@ export default class SceneState {
             worldId: sceneData.worldId,
             fileName: sceneData.fileName,
             data: sceneData.mapDataModel || sceneData.data || null,
-            isModified: sceneData.isModified ?? false,
+            isModified: sceneData.isModified ?? true,
             isDeleted: sceneData.isDeleted ?? false
         });
     }
@@ -67,5 +67,34 @@ export default class SceneState {
             }
         }
         return false;
+    }
+
+    /**
+     * Retorna todas as entradas do cache de cenas.
+     * @returns {Map<string, Object>} O Map completo do cache.
+     */
+    getAllScenes() {
+        return this.cache;
+    }
+
+    /**
+     * Retorna apenas as cenas que possuem alterações não salvas (isModified = true).
+     * @returns {Array<Object>} Lista de entradas modificadas com seus IDs.
+     */
+    getModifiedScenes() {
+        const modified = [];
+        for (const [sceneId, entry] of this.cache.entries()) {
+            if (entry.isModified === true && !entry.isDeleted) {
+                modified.push({ sceneId, ...entry });
+            }
+        }
+        return modified;
+    }
+
+    markAsModified(sceneId) {
+        const entry = this.cache.get(sceneId);
+        if (entry) {
+            entry.isModified = true;
+        }
     }
 }

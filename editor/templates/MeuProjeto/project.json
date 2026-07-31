@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "updatedAt": "2026-07-31T00:54:51.120Z"
+    "updatedAt": "2026-07-31T04:43:43.495Z"
   },
   "settings": {
     "projectName": "MeuProjeto",
@@ -37,6 +37,74 @@
           "metadata": {
             "properties": {}
           }
+        },
+        {
+          "id": 2,
+          "worldId": 1,
+          "name": "Scene2",
+          "fileName": "W1S2.json",
+          "columns": 20,
+          "rows": 20,
+          "order": 0,
+          "metadata": {
+            "properties": {}
+          }
+        },
+        {
+          "id": 3,
+          "worldId": 1,
+          "name": "Scene3",
+          "fileName": "W1S3.json",
+          "columns": 20,
+          "rows": 20,
+          "order": 0,
+          "metadata": {
+            "properties": {}
+          }
+        },
+        {
+          "id": 4,
+          "worldId": 1,
+          "name": "Scene4",
+          "fileName": "W1S4.json",
+          "columns": 20,
+          "rows": 20,
+          "order": 0,
+          "metadata": {
+            "properties": {}
+          }
+        },
+        {
+          "id": 5,
+          "worldId": 1,
+          "name": "Scene5",
+          "fileName": "W1S5.json",
+          "columns": 20,
+          "rows": 20,
+          "order": 0,
+          "metadata": {
+            "properties": {}
+          }
+        },
+        {
+          "id": 6,
+          "worldId": 1,
+          "name": "Scene6",
+          "fileName": "W1S6.json",
+          "columns": 20,
+          "rows": 20,
+          "order": 0,
+          "metadata": {
+            "properties": {}
+          }
+        },
+        {
+          "id": 7,
+          "worldId": 1,
+          "name": "Scene7",
+          "fileName": "W1S7.json",
+          "columns": 20,
+          "rows": 20
         }
       ]
     }

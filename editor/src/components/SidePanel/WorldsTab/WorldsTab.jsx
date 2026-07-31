@@ -88,6 +88,15 @@ export default function WorldsTab({ projectController, worldController, projectS
         }
     };
 
+    const handleCreateScene = async () => {
+        console.log("[WorldsTab] Criando nova cena no mundo ativo...");
+        if (worldController && typeof worldController.createScene === 'function') {
+            await worldController.createScene(projectStore.session.navigation.currentWorldId);
+            
+            syncFromStore();
+        }
+    };
+
     // Ações de Cena
     const handleSelectScene = async (sceneId) => {
         console.log("[WorldsTab] Selecionando cena:", sceneId);
@@ -100,14 +109,7 @@ export default function WorldsTab({ projectController, worldController, projectS
         syncFromStore();
     };
 
-    const handleCreateScene = async () => {
-        console.log("[WorldsTab] Criando nova cena no mundo ativo...");
-        if (projectController && typeof projectController.createScene === 'function') {
-            await projectController.createScene();
-            
-            syncFromStore();
-        }
-    };
+    
 
     return (
         <div className="worlds-tab-container">

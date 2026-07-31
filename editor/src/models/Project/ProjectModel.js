@@ -44,7 +44,8 @@ class WorldSectionModel {
       name: this.name,
       order: this.order,
       metadata: this.metadata,
-      scenes: this.scenes.map(scene => scene.toJSON())
+      // 🛡️ Garante que só chama .toJSON se o item for uma instância válida, senão retorna o item bruto
+      scenes: this.scenes.map(scene => (scene && typeof scene.toJSON === 'function' ? scene.toJSON() : scene))
     };
   }
 }
@@ -98,21 +99,6 @@ export default class ProjectModel {
     }
   }
 
-  toJSON() {
-    return {
-      metadata: {
-        version: this.metadata.version,
-        updatedAt: new Date().toISOString()
-      },
-      settings: this.settings,
-      defaultWorldId: this.defaultWorldId,
-      defaultSceneId: this.defaultSceneId,
-      activeWorldId: this.activeWorldId,
-      activeSceneId: this.activeSceneId,
-      worlds: this.worlds.map(world => world.toJSON())
-    };
-  }
-
   getAllWorlds() {
     return this.worlds ?? [];
   }
@@ -155,5 +141,21 @@ export default class ProjectModel {
     const newScene = new SceneSectionModel(sceneData);
     world.scenes.push(newScene);
     return newScene;
+  }
+
+  toJSON() {
+    return {
+      metadata: {
+        version: this.metadata.version,
+        updatedAt: new Date().toISOString()
+      },
+      settings: this.settings,
+      defaultWorldId: this.defaultWorldId,
+      defaultSceneId: this.defaultSceneId,
+      activeWorldId: this.activeWorldId,
+      activeSceneId: this.activeSceneId,
+      // 🛡️ Proteção idêntica para a lista de mundos
+      worlds: this.worlds.map(world => (world && typeof world.toJSON === 'function' ? world.toJSON() : world))
+    };
   }
 }

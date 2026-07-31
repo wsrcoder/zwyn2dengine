@@ -78,6 +78,8 @@ export default class ProjectController {
             // Delega para o service ler o project.json e montar a estrutura na sessão
             const serviceResult = await this.projectService.open(session, projectPath);
 
+            
+
             if (!serviceResult.success) {
                 return {
                     success: false,
@@ -85,6 +87,8 @@ export default class ProjectController {
                     data: null
                 };
             }
+
+            EventHandler.notify(EDITOR_EVENTS.PROJECT_LOADED);
 
             return {
                 success: true,
@@ -126,6 +130,8 @@ export default class ProjectController {
         this.session.world.navigation.activeSceneId = null;
         this.session.world.scenes.cache.clear();
 
+        EventHandler.notify(EDITOR_EVENTS.PROJECT_CLOSED);
+
         console.log("[ProjectController] Projeto fechado com sucesso. Sessão e cache limpos.");
         return true;
     }
@@ -162,67 +168,82 @@ export default class ProjectController {
      * Salva o projeto completo no disco: atualiza o project.json e todas as
      * cenas modificadas que estão presentes no cache de sessão.
      */
+    /**
+     * Salva o projeto atual completo no disco (project.json + cenas modificadas no workingScenes).
+     */
     async save() {
-        if (!this.session.rootPath || !this.session.project) {
-            console.error("[ProjectController] Nenhum projeto aberto para salvar.");
-            return false;
-        }
-
         try {
-            console.log("[ProjectController] Salvando projeto...");
-            const rootPath = this.session.rootPath;
+            const session = this.projectStore.getSession();
+
+            // Valida se há um projeto ativo e um caminho raiz definido
+            if (!session || !session.project || !session.rootPath) {
+                return {
+                    success: false,
+                    message: "Nenhum projeto aberto ou com caminho definido para salvar.",
+                    data: null
+                };
+            }
+
+            console.log("[ProjectController] Salvando projeto em:", session.rootPath);
 
             // 1. Salva o arquivo principal project.json
-            await window.electronAPI.saveJsonFile(
-                `${rootPath}/project.json`, 
-                this.session.project.toJSON()
-            );
-
-            // 2. Percorre o cache de cenas da sessão para salvar as modificadas
-            const scenesState = this.session.world.scenes;
+            const projectJsonData = session.project.toJSON();
+            const projectFilePath = `${session.rootPath}/project.json`;
             
-            for (const [sceneId, cacheEntry] of scenesState.cache.entries()) {
-                if (cacheEntry.isModified) {
-                    // Busca os metadados da cena (incluindo o fileName correto) através do ProjectModel
-                    const sceneDetails = this.session.project.getAllScenes().find(s => s.id === sceneId);
+            const saveProjectResult = await window.electronAPI.saveJsonFile(projectFilePath, projectJsonData);
+            
+            if (saveProjectResult && saveProjectResult.success === false) {
+                throw new Error(saveProjectResult.message || "Falha ao salvar o arquivo project.json");
+            }
+
+
+           if (session.workingScenes && typeof session.workingScenes.getModifiedScenes === 'function') {
+                const modifiedScenes = session.workingScenes.getModifiedScenes();
+
+                for (const sceneEntry of modifiedScenes) {
+                    const { sceneId, fileName, data } = sceneEntry;
                     
-                    if (!sceneDetails || !sceneDetails.fileName) {
-                        console.error(`[ProjectController] Não foi possível encontrar o fileName para a cena ID ${sceneId}.`);
+                    if (!fileName) {
+                        console.warn(`[ProjectController] Cena ID ${sceneId} marcada como modificada, mas não possui fileName.`);
                         continue;
                     }
 
-                    const mapFilePath = `${rootPath}/Data/Maps/${sceneDetails.fileName}`;
-                    const mapJsonString = JsonUtils.stringifyWithCompactArrays(cacheEntry.mapDataModel.toJSON());
+                    const mapFilePath = `${session.rootPath}/Data/Maps/${fileName}`;
+                    const mapData = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
+
+
+                    await window.electronAPI.saveJsonFile(mapFilePath, mapData);
+
+                    // Localiza a entrada original no cache para resetar a flag
+                    const originalEntry = session.workingScenes.getSceneById(sceneId);
+                    if (originalEntry) {
+                        originalEntry.isModified = false;
+                    }
                     
-                    await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
-                    
-                    // Reseta a flag de modificação da cena após salvar com sucesso
-                    cacheEntry.isModified = false;
-                    console.log(`[ProjectController] Cena ${sceneDetails.fileName} salva.`);
+                    console.log(`[ProjectController] Cena ${fileName} salva com sucesso.`);
                 }
             }
 
-            // 3. Otimização de Memória: limpa o cache e mantém APENAS a cena ativa atual
-            const activeSceneId = scenesState.activeSceneId;
-            const activeCacheEntry = activeSceneId ? scenesState.cache.get(activeSceneId) : null;
+            // 3. Reseta a flag geral de modificação da sessão
+            session.isModified = false;
 
-            scenesState.cache.clear();
+            // Notifica que o projeto foi salvo (útil para atualizar a UI, sumir com asteriscos de "não salvo", etc.)
+            EventHandler.notify(EDITOR_EVENTS.PROJECT_SAVED);
 
-            if (activeCacheEntry && activeSceneId) {
-                scenesState.cache.set(activeSceneId, {
-                    mapDataModel: activeCacheEntry.mapDataModel,
-                    isModified: activeCacheEntry.isModified,
-                    isDeleted: false
-                });
-            }
-
-            this.session.isModified = false;
-            console.log("[ProjectController] Projeto salvo e cache otimizado com sucesso!");
-            return true;
+            console.log("[ProjectController] Projeto salvo com sucesso!");
+            return {
+                success: true,
+                message: "Projeto salvo com sucesso.",
+                data: null
+            };
 
         } catch (error) {
-            console.error("[ProjectController] Erro crítico ao salvar o projeto:", error);
-            return false;
+            console.error("[ProjectController] Erro ao salvar projeto:", error);
+            return {
+                success: false,
+                message: `Erro ao salvar o projeto: ${error.message}`,
+                data: null
+            };
         }
     }
 

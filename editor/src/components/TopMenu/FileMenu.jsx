@@ -1,14 +1,15 @@
-
-// src/components/TopMenu.jsx
+// src/components/FileMenu.jsx
 import React from 'react';
-import './TopMenu.css';
+import './FileMenu.css'; // Mantém o CSS original
 
-export default function TopMenu({ 
+export default function FileMenu({ 
     onNewProject, 
     onOpenProject, 
+    onSave,
     onSaveAs, 
     onCloseProject, 
-    onExit 
+    onExit,
+    hasProject = false 
 }) {
     return (
         <header className="top-menu-container">
@@ -27,13 +28,16 @@ export default function TopMenu({
 
                         <div className="top-menu-separator" />
 
-                        <button className="top-menu-item" onClick={onSaveAs}>
+                        <button className="top-menu-item" onClick={onSave} disabled={!hasProject}>
+                            Salvar
+                        </button>
+                        <button className="top-menu-item" onClick={onSaveAs} disabled={!hasProject}>
                             Salvar Como...
                         </button>
 
                         <div className="top-menu-separator" />
 
-                        <button className="top-menu-item" onClick={onCloseProject}>
+                        <button className="top-menu-item" onClick={onCloseProject} disabled={!hasProject}>
                             Fechar Projeto
                         </button>
 
