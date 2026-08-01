@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import WorldsTab from './WorldsTab/WorldsTab.jsx';
 import LayersTab from './LayersTab/LayersTab.jsx';
-import { EventHandler } from '../../state/EventBus.js'; // <-- Importa o EventBus global
-import { EDITOR_EVENTS } from '../../state/EventTypes.js';
+import { EventHandler } from '../../../state/EventBus.js'; // <-- Importa o EventBus global
+import { EDITOR_EVENTS } from '../../../state/EventTypes.js';
 import './SidePanel.css';
 
 export default function SidePanel({ 

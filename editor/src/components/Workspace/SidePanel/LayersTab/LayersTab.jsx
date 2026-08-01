@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LayerType } from '../../../constants/LayerType.js';
-import { LayerBucketMap } from '../../../constants/LayerBucketMap.js';
+import { LayerType } from '../../../../constants/LayerType.js';
+import { LayerBucketMap } from '../../../../constants/LayerBucketMap.js';
 import './LayersTab.css';
 
 export default function LayersTab({ projectController, uiController }) {
