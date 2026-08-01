@@ -116,21 +116,16 @@ export default class ProjectController {
      */
     async close() {
         console.log("[ProjectController] Fechando o projeto atual...");
-
-        // Verifica de forma centralizada se há qualquer alteração pendente
-        if (this.hasUnsavedChanges()) {
-            console.warn("[ProjectController] Existem alterações não salvas no projeto ou em cenas abertas.");
-            // Futuramente: abrir modal de confirmação (Salvar / Descartar / Cancelar)
-        }
+        const session = this.projectStore.getSession();
 
         // Reseta totalmente a sessão para o estado inicial/vazio
-        this.session.rootPath = null;
-        this.session.project = new ProjectModel();
-        this.session.isModified = false;
+        session.rootPath = null;
+        session.project = null;
+        session.isModified = false;
 
-        this.session.world.navigation.activeWorldId = null;
-        this.session.world.navigation.activeSceneId = null;
-        this.session.world.scenes.cache.clear();
+        session.navigation.activeWorldId = null;
+        session.navigation.activeSceneId = null;
+        session.workingScenes.clear();
 
         EventHandler.notify(EDITOR_EVENTS.PROJECT_CLOSED);
 
@@ -151,8 +146,8 @@ export default class ProjectController {
         }
 
         // 2. Delega para o ScenesState verificar se há cenas modificadas no cache
-        if (this.session.world && this.session.world.scenes) {
-            return this.session.world.scenes.hasModifiedScenes();
+        if (session.workingScenes) {
+            return session.workingScenes.hasModifiedScenes();
         }
 
         return false;
