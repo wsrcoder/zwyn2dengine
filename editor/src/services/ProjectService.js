@@ -202,8 +202,15 @@ export default class ProjectService {
             // Se o projeto salvo tiver mundos, seleciona o primeiro automaticamente. Senão, deixa null.
             const firstWorld = session.project.worlds && session.project.worlds.length > 0 ? session.project.worlds[0] : null;
             session.navigation.activeWorldId = firstWorld ? firstWorld.id : null;
-            session.navigation.activeSceneId = null; // A cena ativa pode ser carregada sob demanda ou se houver padrão
+            session.navigation.activeSceneId = session.project.activeSceneId; // A cena ativa pode ser carregada sob demanda ou se houver padrão
 
+            /*session.workingScenes.setScene(session.project.activeSceneId, {
+                worldId: defaultWorld.id, // Referência limpa de qual mundo essa cena pertence
+                data: initialMapModel,
+                fileName: defaultScene.fileName,
+                isModified: false,
+                isDeleted: false
+            });*/
             console.log("[ProjectService] project.json carregado com sucesso.");
 
             return {

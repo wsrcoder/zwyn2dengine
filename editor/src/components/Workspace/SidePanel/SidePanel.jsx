@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import WorldsTab from './WorldsTab/WorldsTab.jsx';
-import LayersTab from './LayersTab/LayersTab.jsx';
-import { EventHandler } from '../../../state/EventBus.js'; // <-- Importa o EventBus global
+import WorldPanel from './WorldTab/WorldPanel.jsx';
+import ScenePanel from './SceneTab/ScenePanel.jsx';
+import EventPanel from './EventTab/EventPanel.jsx';
+import { EventHandler } from '../../../state/EventBus.js';
 import { EDITOR_EVENTS } from '../../../state/EventTypes.js';
 import './SidePanel.css';
 
@@ -20,13 +21,11 @@ export default function SidePanel({
             setRenderTrigger(prev => prev + 1);
         };
 
-        // Inscreve nos eventos específicos que interessam a este painel
         const unsubProject = EventHandler.subscribe(EDITOR_EVENTS.PROJECT_LOADED, handleRefreshUI);
         const unsubSceneChanged = EventHandler.subscribe(EDITOR_EVENTS.SCENE_CHANGED, handleRefreshUI);
         const unsubWorldsList = EventHandler.subscribe(EDITOR_EVENTS.WORLDS_LIST_UPDATED, handleRefreshUI);
 
         return () => {
-            // Limpa as inscrições quando o componente desmontar
             unsubProject();
             unsubSceneChanged();
             unsubWorldsList();
@@ -44,10 +43,10 @@ export default function SidePanel({
                     Mundos
                 </button>
                 <button 
-                    className={`tab-btn ${activeTab === 'layers' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('layers')}
+                    className={`tab-btn ${activeTab === 'scene' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('scene')}
                 >
-                    Camadas
+                    Cena
                 </button>
                 <button 
                     className={`tab-btn ${activeTab === 'events' ? 'active' : ''}`}
@@ -60,21 +59,22 @@ export default function SidePanel({
             {/* Conteúdo Dinâmico Baseado na Aba Ativa */}
             <div className="sidebar-tab-content">
                 {activeTab === 'worlds' && (
-                    <WorldsTab 
+                    <WorldPanel 
                         projectController={projectController} 
                         projectStore={projectStore}
                         worldController={worldController}
                     />
                 )}
 
-                {activeTab === 'layers' && (
-                    <LayersTab 
+                {activeTab === 'scene' && (
+                    <ScenePanel 
                         projectController={projectController}
                         projectStore={projectStore}
                     />
                 )}
+                
                 {activeTab === 'events' && (
-                    <EventsTab 
+                    <EventPanel 
                         projectController={projectController}
                         projectStore={projectStore}
                     />

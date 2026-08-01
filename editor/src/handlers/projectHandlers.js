@@ -120,7 +120,6 @@ export function createProjectHandlers(projectController, worldController, projec
 
                     // Define os IDs ativos na raiz da session
                     session.navigation.activeWorldId = firstWorld.id;
-                    session.navigation.activeSceneId = firstScene.id;
 
                     // Garante que o Map de workingScenes existe antes de dar o set
                     if (!session.workingScenes) {
@@ -136,6 +135,7 @@ export function createProjectHandlers(projectController, worldController, projec
                         isDeleted: false
                     });
 
+                    session.workingScenes.activeSceneId = firstScene.id;
                     console.log("[Handler] Mapa carregado no workingScenes da Store com sucesso!");
                 }
 

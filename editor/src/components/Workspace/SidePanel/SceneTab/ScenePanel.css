@@ -1,0 +1,121 @@
+.scene-panel-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sidebar-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--border-color, #333);
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary, #aaa);
+    background-color: var(--bg-secondary, #1e1e1e);
+    border-bottom: 1px solid var(--border-color, #333);
+}
+
+.section-content-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.empty-text {
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--text-muted, #777);
+    text-align: center;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 6px 12px;
+    background-color: var(--button-bg, #2d2d2d);
+    border: 1px dashed var(--border-color, #444);
+    color: var(--text-primary, #fff);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.action-btn:hover {
+    background-color: var(--button-hover, #3d3d3d);
+}
+
+
+.layers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    list-style: none;
+    margin: 0;
+    overflow-y: auto;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background-color: #252525;
+    border: 1px solid #333;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.layer-item:hover {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+.layer-item.active {
+    background-color: #1a365d; /* Um azul sutil de destaque */
+    border-color: #2b6cb0;
+}
+
+.drag-handle {
+    color: #666;
+    cursor: grab;
+}
+
+.layer-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 0.9rem;
+}
+
+.icon-btn:hover {
+    color: #fff;
+}

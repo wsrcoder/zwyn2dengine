@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { EDITOR_EVENTS } from '../../../../state/EventTypes';
 import { EventHandler } from '../../../../state/EventBus';
 
-import './WorldsTab.css';
+import './WorldPanel.css';
 
 export default function WorldsTab({ projectController, worldController, projectStore }) {
     // Adicione um estado para saber se há projeto carregado
