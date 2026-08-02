@@ -65,13 +65,11 @@
 
 /* Viewport do Tileset */
 .section-content-tileset {
-    height: 180px; /* Altura fixa ou flexível para a área de tiles */
+    height: 200px;
     background-color: #181818;
-    display: flex;
-    align-items: center;
-    justify-content: container;
+    overflow: auto;
     position: relative;
-    overflow-y: auto;
+    border-top: 1px solid #333;
 }
 
 .empty-state {
@@ -84,13 +82,31 @@
 
 .tileset-grid-viewport {
     width: 100%;
-    height: 100%;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: flex-start;
+    padding: 8px;
 }
 
 .placeholder-info {
     color: #666;
     font-size: 0.75rem;
+}
+
+.tileset-image {
+    max-width: 100%;
+    image-rendering: pixelated; /* Mantém o estilo pixel art nítido sem borrar */
+    display: block;
+    cursor: crosshair;
+}
+
+.tileset-canvas-viewport {
+    display: inline-block;
+    padding: 8px;
+}
+
+.tileset-canvas {
+    display: block;
+    image-rendering: pixelated;
+    cursor: crosshair;
 }

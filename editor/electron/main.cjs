@@ -1,7 +1,9 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs'); 
+// Você pode extrair as promises direto daqui sem quebrar o resto:
+const fsPromises = require('fs').promises;
 
 // Define se estamos em modo de desenvolvimento (se não foi empacotado para produção)
 const isDev = true;
@@ -83,6 +85,18 @@ ipcMain.handle('project:load-file', async (event, absoluteFilePath) => {
     } catch (error) {
         console.error("Erro interno no fs.readFileSync:", error.message);
         return { success: false, error: error.message };
+    }
+});
+
+// E o seu novo handler fica blindado assim:
+ipcMain.handle('project:load-binary-file', async (event, filePath) => {
+    try {
+        const data = await fsPromises.readFile(filePath);
+        const base64 = data.toString('base64');
+        return `data:image/png;base64,${base64}`;
+    } catch (error) {
+        console.error("Erro ao carregar arquivo binário:", error);
+        throw error;
     }
 });
 

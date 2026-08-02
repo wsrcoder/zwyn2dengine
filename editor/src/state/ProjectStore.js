@@ -1,5 +1,7 @@
 import ProjectModel from '../models/Project/ProjectModel.js';
 import SceneState from './SceneState.js'; // Ajuste o caminho se necessário
+import { ToolCategory } from '../constants/ToolType.js';
+import { TileToolType } from '../constants/ToolType.js';
 
 export default class ProjectStore {
     constructor() {
@@ -15,6 +17,27 @@ export default class ProjectStore {
             // 2. O Cache de Cenas é GLOBAL na sessão, mapeando qualquer cena aberta em memória
             // Chave: ID da cena (ou 'W{worldId}S{sceneId}'), Valor: { mapDataModel, fileName, isModified }
             workingScenes: new SceneState(),
+
+            // --- Passo 1: Estrutura de Ferramentas Baseada no Modelo Dinâmico ---
+            tools: {
+                activeCategory: ToolCategory.TILE, // Categoria ativa padrão (ex: 'tile', 'entity', etc.)
+        
+                tile: {
+                    activeTool: TileToolType.BRUSH,      // Ferramenta ativa ('brush', 'bucket', 'eraser')
+                    activeTilesetId: null,    // ID ou nome do tileset selecionado
+                    selection: {
+                            width: 1,
+                            height: 1,
+                            tiles: [[0]],         // Matriz bidimensional de GIDs
+                            sourceRect: {
+                                startX: 0,
+                                startY: 0,
+                                endX: 0,
+                                endY: 0
+                            }
+                        }
+                 }
+            }
            
         };
 

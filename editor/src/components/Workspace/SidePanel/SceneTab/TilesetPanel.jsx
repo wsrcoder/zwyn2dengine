@@ -1,18 +1,43 @@
-import React from 'react';
+import React, {useRef, useEffect, useState} from 'react';
+import TilesetRenderer from '../../../../renderers/TilesetRenderer';
 import './TilesetPanel.css';
 
 export default function TilesetPanel({ 
     tilesets = [], 
+    activeTileset,
     activeTilesetId, 
     onSelectTileset, 
-    onAddTileset, 
-    onRemoveTileset,
     activeTool,
     onSelectTool 
 }) {
+
+    const canvasRef = useRef(null);
+    const rendererRef = useRef(null);
+
+    // Instancia o renderer do canvas quando o componente monta
+    useEffect(() => {
+        if (canvasRef.current && !rendererRef.current) {
+            rendererRef.current = new TilesetRenderer(canvasRef.current);
+        }
+    }, []);
+
+    // Atualiza a imagem sempre que o tileset ativo mudar
+    useEffect(() => {
+        if (rendererRef.current && activeTileset?.imagePath) {
+            rendererRef.current.loadTileset(
+                activeTileset.imagePath, 
+                activeTileset.tileWidth, 
+                activeTileset.tileHeight
+            ).catch(() => {
+                // Tratamento caso falhe o file:// direto, podemos evoluir para fetch blob se precisar
+            });
+        }
+    }, [activeTileset]);
+
+
     return (
         <div className="sidebar-section tileset-section">
-            {/* Cabeçalho com Seletor de Tileset e Ações de Gerenciamento */}
+            {/* Toolbar Superior: Seletor e Ações */}
             <div className="section-header tileset-toolbar-top">
                 <select 
                     className="tileset-select"
@@ -29,12 +54,12 @@ export default function TilesetPanel({
                 </select>
 
                 <div className="tileset-actions">
-                    <button className="small-action-btn" onClick={onAddTileset} title="Adicionar Novo Tileset">➕</button>
-                    <button className="small-action-btn danger" onClick={onRemoveTileset} title="Remover Tileset Atual" disabled={tilesets.length === 0}>🗑</button>
+                    <button className="small-action-btn" title="Adicionar Novo Tileset">➕</button>
+                    <button className="small-action-btn danger" title="Remover Tileset Atual" disabled={tilesets.length === 0}>🗑</button>
                 </div>
             </div>
 
-            {/* Barra de Ferramentas de Pintura (Pincel, Balde, etc.) */}
+            {/* Barra de Ferramentas de Pintura */}
             <div className="painting-toolbar">
                 <button 
                     className={`tool-btn ${activeTool === 'brush' ? 'active' : ''}`}
@@ -59,17 +84,15 @@ export default function TilesetPanel({
                 </button>
             </div>
 
-            {/* Área de Visualização do Grid de Tiles */}
+            {/* Área de Visualização do Tileset Real */}
             <div className="section-content-tileset">
-                {tilesets.length === 0 ? (
+                {!activeTileset ? (
                     <div className="empty-state">
                         <span className="empty-text">Nenhum tileset carregado</span>
-                        <button className="action-btn" onClick={+onAddTileset}>Carregar Tileset</button>
                     </div>
                 ) : (
-                    <div className="tileset-grid-viewport">
-                        {/* Aqui vai renderizar a imagem do tileset fatiada em grades */}
-                        <span className="placeholder-info">Área de Seleção do Tileset</span>
+                    <div className="tileset-canvas-viewport">
+                        <canvas ref={canvasRef} className="tileset-canvas" />
                     </div>
                 )}
             </div>

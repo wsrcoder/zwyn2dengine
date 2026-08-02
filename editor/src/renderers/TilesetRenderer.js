@@ -1,137 +1,81 @@
 
-export class TilesetRenderer {
-    constructor(canvas, tilesetData = null, tileSize = 32) {
-        if (!canvas) {
-            throw new Error("Canvas element is required for TilesetRenderer.");
+export default class TilesetRenderer {
+    constructor(canvasElement) {
+        this.canvas = canvasElement;
+        this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+        this.image = null;
+        this.tileWidth = 32;
+        this.tileHeight = 32;
+        this.isLoaded = false;
+    }
+
+    async loadTileset(imagePath, tileWidth = 32, tileHeight = 32) {
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        this.isLoaded = false;
+
+        try {
+            // Pede para o Electron ler o arquivo em segurança e retornar a string base64
+            const dataUrl = await window.electronAPI.loadBinaryFile(imagePath);
+
+            return new Promise((resolve, reject) => {
+                this.image = new Image();
+                this.image.onload = () => {
+                    this.isLoaded = true;
+                    this.resizeCanvas();
+                    this.render();
+                    resolve();
+                };
+                this.image.onerror = (err) => {
+                    console.error("[TilesetRenderer] Erro ao instanciar imagem:", err);
+                    reject(err);
+                };
+                this.image.src = dataUrl;
+            });
+        } catch (error) {
+            console.error("[TilesetRenderer] Falha ao carregar binário do tileset:", error);
+            throw error;
         }
-
-        this.canvas = canvas;
-        this.ctx = this.canvas.getContext('2d');
-
-        this.tileSize = tileSize;
-        this.tilesetData = tilesetData;
-        this.tilesetImage = null;
-
-        // Selection / Brush state (UI Layer)
-        this.selectedRect = {
-            startX: 0,
-            startY: 0,
-            width: tileSize,
-            height: tileSize
-        };
-
-        this.showGrid = true;
-    }
-
-    setTilesetData(tilesetData, imageElement) {
-        this.tilesetData = tilesetData;
-        this.tilesetImage = imageElement;
-
-        if (this.tilesetImage && this.tilesetData) {
-            this.resizeCanvas();
-            this.render();
-        }
-    }
-
-    setTileSize(tileSize) {
-        this.tileSize = tileSize;
-        this.resizeCanvas();
-        this.render();
-    }
-
-    setSelectedRect(rect) {
-        this.selectedRect = rect;
-        this.render();
-    }
-
-    setShowGrid(showGrid) {
-        this.showGrid = showGrid;
-        this.render();
     }
 
     resizeCanvas() {
-        if (!this.tilesetImage) return;
-
-        // Set canvas size based on the loaded tileset image dimensions
-        this.canvas.width = this.tilesetImage.width;
-        this.canvas.height = this.tilesetImage.height;
+        if (!this.canvas || !this.image) return;
+        this.canvas.width = this.image.width;
+        this.canvas.height = this.image.height;
     }
 
     render() {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.isLoaded || !this.image) return;
 
-        // Clear the entire canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Layer 1: Render the Tileset image (Base Layer)
-        this.renderTilesetLayer();
-
-        // Layer 2: Render the Grid (Optional)
-        if (this.showGrid) {
-            this.renderGridLayer();
-        }
-
-        // Layer 3: Render the Selection / Brush Overlay (UI Layer)
-        this.renderUISelectionLayer();
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.drawImage(this.image, 0, 0);
+        this.drawGrid();
     }
 
-    renderTilesetLayer() {
-        if (!this.tilesetImage) return;
-
-        this.ctx.drawImage(this.tilesetImage, 0, 0);
-    }
-
-    renderGridLayer() {
-        if (!this.tilesetImage) return;
-
-        const imgWidth = this.tilesetImage.width;
-        const imgHeight = this.tilesetImage.height;
+    drawGrid() {
+        if (!this.ctx) return;
 
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
 
-        for (let x = 0; x <= imgWidth; x += this.tileSize) {
+        const cols = Math.floor(this.image.width / this.tileWidth);
+        const rows = Math.floor(this.image.height / this.tileHeight);
+
+        for (let c = 0; c <= cols; c++) {
+            const x = c * this.tileWidth;
+            this.ctx.beginPath();
             this.ctx.moveTo(x, 0);
-            this.ctx.lineTo(x, imgHeight);
+            this.ctx.lineTo(x, this.image.height);
+            this.ctx.stroke();
         }
 
-        for (let y = 0; y <= imgHeight; y += this.tileSize) {
+        for (let r = 0; r <= rows; r++) {
+            const y = r * this.tileHeight;
+            this.ctx.beginPath();
             this.ctx.moveTo(0, y);
-            this.ctx.lineTo(imgWidth, y);
+            this.ctx.lineTo(this.image.width, y);
+            this.ctx.stroke();
         }
-
-        this.ctx.stroke();
-    }
-
-    renderUISelectionLayer() {
-        if (!this.selectedRect) return;
-
-        const { x, y, width, height } = this.selectedRect;
-
-        // Draw selection brush overlay border and semi-transparent fill
-        this.ctx.fillStyle = 'rgba(0, 122, 204, 0.3)';
-        this.ctx.fillRect(x, y, width, height);
-
-        this.ctx.strokeStyle = '#007acc';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(x, y, width, height);
-    }
-
-    handleInputClick(event) {
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-
-        // Snap to grid based on tile size
-        const tileX = Math.floor(mouseX / this.tileSize) * this.tileSize;
-        const tileY = Math.floor(mouseY / this.tileSize) * this.tileSize;
-
-        return {
-            x: tileX,
-            y: tileY,
-            width: this.tileSize,
-            height: this.tileSize
-        };
     }
 }
