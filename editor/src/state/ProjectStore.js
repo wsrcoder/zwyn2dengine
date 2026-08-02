@@ -22,7 +22,6 @@ export default class ProjectStore {
            
         };
 
-        this.listeners = new Set();
     }
 
     /**

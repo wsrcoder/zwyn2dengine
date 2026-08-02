@@ -50,7 +50,7 @@ export default class ToolState {
      * Retorna todo o estado atual das ferramentas ou uma categoria específica.
      * @param {string} [category] - Opcional: 'tile', 'entity', etc.
      */
-    getCurrentTool(category) {
+    getActiveTool(category) {
         if (category) {
             return this[category];
         }

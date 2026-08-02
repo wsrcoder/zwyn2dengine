@@ -6,7 +6,9 @@ export default class TilesetInputHandler {
         this.canvas = canvasElement;
         this.tileWidth = options.tileWidth || 32;
         this.tileHeight = options.tileHeight || 32;
+        this.onSelectionStart = options.onSelectionStart || (() => {});
         this.onSelectionChange = options.onSelectionChange || (() => {});
+        this.onSelectionEnd = options.onSelectionEnd || (() => {});
 
         // Estado interno do mouse
         this.isDragging = false;
@@ -28,7 +30,8 @@ export default class TilesetInputHandler {
             this.currentHover = { ...this.dragStart };
 
             // CORREÇÃO 1: Dispara a seleção imediata do clique inicial
-            this._triggerSelection();
+            const initialData = this._triggerSelection();
+            this.onSelectionStart(initialData);
         };
 
         this.onMouseMove = (e) => {
@@ -46,7 +49,8 @@ export default class TilesetInputHandler {
         this.onMouseUp = () => {
             if (!this.isDragging) return;
             this.isDragging = false;
-            this._triggerSelection();
+            const finalData =this._triggerSelection();
+            this.onSelectionEnd(finalData);
         };
 
         // Adiciona os listeners (mousemove na janela inteira garante fluidez nas bordas)

@@ -14,4 +14,10 @@ export const EDITOR_EVENTS = Object.freeze({
     // Categoria: Cenas / Mapas
     SCENE_CHANGED: 'sceneChanged',
     SCENE_MODIFIED: 'sceneModified',
+
+    // Categoria: Ferramentas e Tiles (Novo)
+    TOOL_CHANGED: 'toolChanged',
+    TILE_SELECTION_STARTED: 'tileSelection:started',
+    TILE_SELECTION_CHANGED: 'tileSelection:changed',
+    TILE_SELECTION_ENDED: 'tileSelection:ended',
 });

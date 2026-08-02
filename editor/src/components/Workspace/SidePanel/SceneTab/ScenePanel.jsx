@@ -74,8 +74,7 @@ export default function ScenePanel({ projectController, projectStore }) {
                 activeTileset={activeTileset}
                 activeTilesetId={activeTilesetId}
                 onSelectTileset={setActiveTilesetId}
-                activeTool={activeTool}
-                onSelectTool={setActiveTool}
+                projectStore={projectStore}
             />
             <LayerPanel activeScene={activeScene} layers={layers} />
         </div>
