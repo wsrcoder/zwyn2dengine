@@ -104,7 +104,7 @@ export function createProjectHandlers(projectController, worldController, projec
                     }
 
                     // Pede para o Controller carregar e fazer parse do arquivo de mapa do disco
-                    const sceneResult = await worldController.getSceneById(firstScene.id);
+                    const sceneResult = await worldController.getScene(firstWorld.id, firstScene.id);
 
                     console.log("sceneResult")/
                     console.log(sceneResult);
@@ -120,6 +120,7 @@ export function createProjectHandlers(projectController, worldController, projec
 
                     // Define os IDs ativos na raiz da session
                     session.navigation.activeWorldId = firstWorld.id;
+                    session.navigation.activeSceneId = firstScene.id;
 
                     // Garante que o Map de workingScenes existe antes de dar o set
                     if (!session.workingScenes) {
@@ -127,8 +128,9 @@ export function createProjectHandlers(projectController, worldController, projec
                     }
 
                     // Popula o workingScenes utilizando os dados reais retornados pelo sceneResult
-                    session.workingScenes.setScene(firstScene.id, {
+                    session.workingScenes.setScene(firstWorld.id, firstScene.id, {
                         worldId: firstWorld.id, // Referência limpa de qual mundo essa cena pertence
+                        sceneId: firstScene.id,
                         data: sceneResult.data, // O MapDataModel parseado do disco
                         fileName: firstScene.fileName,
                         isModified: false,

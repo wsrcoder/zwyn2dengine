@@ -6,6 +6,8 @@ import { ImageUtils } from '../utils/ImageUtils.js';
 import { JsonUtils } from '../utils/JsonUtils.js';
 import SceneState from '../state/SceneState.js';
 
+import { ProjectParams } from '../constants/ProjectParams.js';
+
 
 export default class ProjectService {
     /**
@@ -29,15 +31,15 @@ export default class ProjectService {
             session.isModified = false;
 
             // 2. Cria a estrutura de diretórios base
-            await window.electronAPI.createDirectory(`${session.rootPath}/Data/Maps`);
-            await window.electronAPI.createDirectory(`${session.rootPath}/Assets/Tilesets`);
+            await window.electronAPI.createDirectory(`${session.rootPath}/${ProjectParams.DIR.SCENES}`);
+            await window.electronAPI.createDirectory(`${session.rootPath}/${ProjectParams.DIR.TILESETS}`);
 
             // 3. Copia os tilesets padrão - TD: TOP DOWN
             const default_tileset = 'TTD1';
             const defaultTilesets = [
                 {
                     fileName: default_tileset + '.png',
-                    sourcePath: './Assets/Tilesets/' + default_tileset + '.png'
+                    sourcePath: `${ProjectParams.DIR.TILESETS}/${default_tileset}.png`,
                 }
             ];
 
@@ -46,7 +48,7 @@ export default class ProjectService {
                     await ImageUtils.copyImageTo(
                         tileset.sourcePath,
                         normalizedPath,
-                        'Assets/Tilesets',
+                        `${ProjectParams.DIR.TILESETS}`,
                         tileset.fileName
                     );
                 }
@@ -69,7 +71,7 @@ export default class ProjectService {
             const defaultScene = defaultWorld.scenes[0];
 
             // 5. Salva o arquivo project.json no disco
-            await window.electronAPI.saveJsonFile(`${normalizedPath}/project.json`, session.project.toJSON());
+            await window.electronAPI.saveJsonFile(`${normalizedPath}/${ProjectParams.PROJECT_MANIFEST_FILE}`, session.project.toJSON());
 
             // 6. Cria e salva o arquivo de dados da cena inicial no disco
             const defaultRawMap = {
@@ -103,7 +105,7 @@ export default class ProjectService {
             const mapJsonString = JsonUtils.stringifyWithCompactArrays(initialMapModel.toJSON());
 
             await window.electronAPI.saveTextFile(
-                `${normalizedPath}/Data/Maps/${defaultScene.fileName}`, 
+                `${normalizedPath}/${ProjectParams.DIR.SCENES}/${defaultScene.fileName}`, 
                 mapJsonString
             );
 
@@ -112,8 +114,9 @@ export default class ProjectService {
                 session.workingScenes = new SceneState();
             }
 
-            session.workingScenes.setScene(defaultScene.id, {
+            session.workingScenes.setScene(defaultWorld.id, defaultScene.id, {
                 worldId: defaultWorld.id, // Referência limpa de qual mundo essa cena pertence
+                scenedId: defaultScene.id,
                 data: initialMapModel,
                 fileName: defaultScene.fileName,
                 isModified: false,
@@ -160,7 +163,7 @@ export default class ProjectService {
             const normalizedPath = projectPath.replace(/\\/g, '/').replace(/\/+$/, '');
             session.rootPath = normalizedPath;
 
-            const jsonFilePath = `${normalizedPath}/project.json`;
+            const jsonFilePath = `${normalizedPath}/${ProjectParams.PROJECT_MANIFEST_FILE}`;
             console.log("[ProjectService] Tentando ler o arquivo em:", jsonFilePath);
 
             const response = await window.electronAPI.loadJsonFile(jsonFilePath);
@@ -202,7 +205,7 @@ export default class ProjectService {
             // Se o projeto salvo tiver mundos, seleciona o primeiro automaticamente. Senão, deixa null.
             const firstWorld = session.project.worlds && session.project.worlds.length > 0 ? session.project.worlds[0] : null;
             session.navigation.activeWorldId = firstWorld ? firstWorld.id : null;
-            session.navigation.activeSceneId = session.project.activeSceneId; // A cena ativa pode ser carregada sob demanda ou se houver padrão
+            session.navigation.activeSceneId = session.project.activeSceneId || 1; // A cena ativa pode ser carregada sob demanda ou se houver padrão
 
             /*session.workingScenes.setScene(session.project.activeSceneId, {
                 worldId: defaultWorld.id, // Referência limpa de qual mundo essa cena pertence

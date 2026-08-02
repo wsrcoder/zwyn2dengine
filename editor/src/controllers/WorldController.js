@@ -123,7 +123,7 @@ export default class WorldController {
      * Busca uma cena pelo ID (carregando do disco/cache através do service).
      * @param {string|number} sceneId - ID da cena que deseja buscar.
      */
-    async getSceneById(sceneId) {
+    async getScene(worldId, sceneId) {
         if (!sceneId) {
             return {
                 success: false,
@@ -145,7 +145,7 @@ export default class WorldController {
             }
 
             // Delega para o service e recebe o objeto de contrato padronizado
-            const serviceResult = await this.worldService.getSceneById(session, activeWorldId, sceneId);
+            const serviceResult = await this.worldService.getScene(session, activeWorldId, sceneId);
 
             
             if (!serviceResult.success) {

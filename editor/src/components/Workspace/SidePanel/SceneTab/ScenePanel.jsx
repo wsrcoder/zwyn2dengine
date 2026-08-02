@@ -26,7 +26,11 @@ export default function ScenePanel({ projectController, projectStore }) {
 
     const rootPath = projectStore?.session?.rootPath;
     const sceneState = projectStore?.session?.workingScenes;
-    const cacheEntry = sceneState?.getActiveCacheEntry();
+
+    const activeWorldId = projectStore?.session?.navigation.activeWorldId;
+    const activeSceneId = projectStore?.session?.navigation.activeSceneId;
+
+    const cacheEntry = sceneState?.getScene(activeWorldId, activeSceneId);
     const activeScene = cacheEntry?.data || cacheEntry?.mapDataModel;
 
     // 1. Extrai as camadas

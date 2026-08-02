@@ -267,7 +267,7 @@ export default class WorldService {
      * Carrega os dados de uma cena específica do disco (ou do cache da sessão),
      * utilizando o session.rootPath e a nova estrutura do ProjectModel.
      */
-    async getSceneById(session, worldId, sceneId) {
+    async getScene(session, worldId, sceneId) {
         try {
 
             // Garante que o Map de workingScenes existe na sessão
@@ -276,7 +276,7 @@ export default class WorldService {
             }
 
             // 1. Verifica se já está no cache da sessão para evitar leitura desnecessária do disco
-            const cachedScene = session.workingScenes.getSceneById(sceneId);
+            const cachedScene = session.workingScenes.getScene(worldId, sceneId);
             console.log("cachedScene");
             console.log(cachedScene);
             if (cachedScene && cachedScene.data) {
@@ -311,7 +311,7 @@ export default class WorldService {
                 };
             }
 
-            const fullPath = `${rootPath}/Data/Maps/${sceneMeta.fileName}`;
+            const fullPath = `${rootPath}/${ProjectParams.DIR.SCENES}/${sceneMeta.fileName}`;
             const fileContent = await window.electronAPI.loadJsonFile(fullPath);
 
             if (!fileContent) {
@@ -327,8 +327,9 @@ export default class WorldService {
             const mapModel = new MapDataModel(rawData);
 
             // 5. Guarda no cache da sessão para as próximas consultas
-            session.workingScenes.setScene(sceneId, {
+            session.workingScenes.setScene(worldId, sceneId, {
                 worldId: worldId,
+                sceneId: sceneId,
                 fileName: sceneMeta.fileName,
                 data: mapModel,
                 isModified: false,

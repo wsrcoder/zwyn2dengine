@@ -45,6 +45,62 @@ export class LayerModel{
         return true;
     }
 
+    // Pega um bloco de tiles da camada a partir de uma coordenada inicial (útil para copiar/selecionar no mapa)
+    getTileSelection(startX, startY, width, height) {
+        if (this.type !== 'tilelayer') return null;
+
+        const selection = {
+            width: width,
+            height: height,
+            tiles: []
+        };
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const targetX = startX + x;
+                const targetY = startY + y;
+                
+                // Pega o tile se estiver dentro do mapa, ou 0/null se estiver fora
+                const tileId = this.getTileAt(targetX, targetY);
+                selection.tiles.push(tileId);
+            }
+        }
+
+        return selection;
+    }
+
+    // Aplica um bloco inteiro de tiles (sub-matriz) na camada a partir de uma coordenada de clique (startX, startY)
+    setTileSelection(startX, startY, selectionData) {
+        if (this.type !== 'tilelayer') return false;
+        if (!selectionData || !selectionData.tiles || selectionData.tiles.length === 0) return false;
+
+        const { width, height, tiles } = selectionData;
+        let modified = false;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const targetX = startX + x;
+                const targetY = startY + y;
+                
+                // Índice dentro do array de tiles da seleção
+                const selectionIndex = y * width + x;
+                const tileId = tiles[selectionIndex];
+
+                // Só aplica se estiver dentro dos limites do mapa
+                if (targetX >= 0 && targetX < this.columns && targetY >= 0 && targetY < this.rows) {
+                    const mapIndex = targetY * this.columns + targetX;
+                    if (this.data[mapIndex] !== tileId) {
+                        this.data[mapIndex] !== tileId; // Correção simples: this.data[mapIndex] = tileId
+                        modified = true;
+                    }
+                    this.data[mapIndex] = tileId; // Garante a atribuição correta
+                }
+            }
+        }
+
+        return modified; // Retorna true se alterou algo no mapa
+    }
+
     toJSON() {
         return {
             id: this.id,

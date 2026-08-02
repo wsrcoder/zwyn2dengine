@@ -12,6 +12,7 @@ export default class ProjectStore {
             isModified: false,
             navigation: {
                     activeWorldId: null,
+                    activeSceneId: null,
             },
             // 2. O Cache de Cenas é GLOBAL na sessão, mapeando qualquer cena aberta em memória
             // Chave: ID da cena (ou 'W{worldId}S{sceneId}'), Valor: { mapDataModel, fileName, isModified }

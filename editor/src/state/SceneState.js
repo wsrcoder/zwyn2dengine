@@ -1,52 +1,28 @@
 
 export default class SceneState {
     constructor() {
-        this.activeSceneId = null;
         this.cache = new Map(); // Armazena { worldId, fileName, mapDataModel, isModified, isDeleted }
     }
 
-    /**
-     * Retorna a entrada do cache da cena ativa atual, se existir.
-     */
-    getActiveCacheEntry() {
-        if (!this.activeSceneId) return null;
-        return this.cache.get(this.activeSceneId) || null;
-    }
-
-    /**
-     * Retorna o mapDataModel da cena ativa atual.
-     */
-    getActiveScene() {
-        const entry = this.getActiveCacheEntry();
-        return entry ? entry.mapDataModel : null;
-    }
-
-    /**
-     * Busca uma cena específica diretamente no cache pelo ID (retorna apenas o model).
-     */
-    getFromCache(sceneId) {
-        const entry = this.cache.get(sceneId);
-        return entry ? entry.mapDataModel : null;
-    }
-
-    /**
-     * Retorna a entrada completa do cache para um ID de cena específico (incluindo metadados, isModified, etc).
-     */
-    getSceneById(sceneId) {
-        return this.cache.get(sceneId) || null;
-    }
 
     /**
      * Adiciona ou atualiza uma cena no cache.
      */
-    setScene(sceneId, sceneData) {
-        this.cache.set(sceneId, {
-            worldId: sceneData.worldId,
+    setScene(worldId=1, sceneId=1, sceneData) {
+        const uniquekey = `${worldId}_${sceneId}`
+        this.cache.set(uniquekey, {
+            worldId: worldId,
+            sceneId: sceneId,
             fileName: sceneData.fileName,
             data: sceneData.mapDataModel || sceneData.data || null,
             isModified: sceneData.isModified ?? true,
             isDeleted: sceneData.isDeleted ?? false
         });
+    }
+
+    //novo metodo para obter a scene
+    getScene(worldId, sceneId) {
+        return this.cache.get(`${worldId}_${sceneId}`) || null;
     }
 
     /**
@@ -77,24 +53,28 @@ export default class SceneState {
         return this.cache;
     }
 
-    /**
-     * Retorna apenas as cenas que possuem alterações não salvas (isModified = true).
-     * @returns {Array<Object>} Lista de entradas modificadas com seus IDs.
-     */
-    getModifiedScenes() {
-        const modified = [];
-        for (const [sceneId, entry] of this.cache.entries()) {
-            if (entry.isModified === true && !entry.isDeleted) {
-                modified.push({ sceneId, ...entry });
-            }
-        }
-        return modified;
-    }
-
-    markAsModified(sceneId) {
-        const entry = this.cache.get(sceneId);
+    // Atualizado para receber o worldId e usar a chave composta
+    markAsModified(worldId, sceneId) {
+        const uniqueKey = `${worldId}_${sceneId}`;
+        const entry = this.cache.get(uniqueKey);
         if (entry) {
             entry.isModified = true;
         }
+    }
+
+    // Atualizado para desestruturar ou extrair corretamente a chave composta se necessário
+    getModifiedScenes() {
+        const modified = [];
+        for (const [uniqueKey, entry] of this.cache.entries()) {
+            if (entry.isModified === true && !entry.isDeleted) {
+                modified.push({ 
+                    uniqueKey, 
+                    worldId: entry.worldId,
+                    sceneId: entry.sceneId, 
+                    ...entry 
+                });
+            }
+        }
+        return modified;
     }
 }

@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "updatedAt": "2026-08-02T23:21:12.092Z"
+  },
+  "settings": {
+    "projectName": "MeuProjeto2",
+    "grid": {
+      "default": {
+        "columns": 20,
+        "rows": 15
+      }
+    }
+  },
+  "defaultWorldId": 1,
+  "defaultSceneId": 1,
+  "activeWorldId": 1,
+  "activeSceneId": 1,
+  "worlds": [
+    {
+      "id": 1,
+      "name": "Main World",
+      "order": 1,
+      "metadata": {
+        "description": "",
+        "properties": {}
+      },
+      "scenes": [
+        {
+          "id": 1,
+          "worldId": 1,
+          "name": "Scene1",
+          "fileName": "W1S1.json",
+          "columns": 20,
+          "rows": 15,
+          "order": 0,
+          "metadata": {
+            "properties": {}
+          }
+        }
+      ]
+    }
+  ]
+}
