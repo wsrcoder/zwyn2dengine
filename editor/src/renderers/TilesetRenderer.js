@@ -44,13 +44,19 @@ export default class TilesetRenderer {
         this.canvas.height = this.image.height;
     }
 
-    render() {
+    render(selectionRect = null) {
+        console.log("[TilesetRenderer] Render foi chamado! SelectionRect:", selectionRect);
         if (!this.ctx || !this.isLoaded || !this.image) return;
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.drawImage(this.image, 0, 0);
         this.drawGrid();
+
+        // 3. Se houver um retângulo de seleção, desenha o overlay por cima!
+        if (selectionRect) {
+            this._drawSelectionOverlay(selectionRect);
+        }
     }
 
     drawGrid() {
@@ -77,5 +83,33 @@ export default class TilesetRenderer {
             this.ctx.lineTo(this.image.width, y);
             this.ctx.stroke();
         }
+    }
+
+    _drawSelectionOverlay(rect) {
+        // Se o rect tem endX/endY em vez de width/height, calculamos a largura e altura em tiles:
+        const startX = rect.startX ?? rect.x ?? 0;
+        const startY = rect.startY ?? rect.y ?? 0;
+        const endX = rect.endX ?? startX;
+        const endY = rect.endY ?? startY;
+
+        // Garante que a seleção funciona mesmo se arrastada para trás/cima
+        const minX = Math.min(startX, endX);
+        const minY = Math.min(startY, endY);
+        const maxX = Math.max(startX, endX);
+        const maxY = Math.max(startY, endY);
+
+        const pixelX = minX * this.tileWidth;
+        const pixelY = minY * this.tileHeight;
+        const pixelWidth = (maxX - minX + 1) * this.tileWidth;
+        const pixelHeight = (maxY - minY + 1) * this.tileHeight;
+
+        this.ctx.save();
+        this.ctx.strokeStyle = '#3b82f6';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(pixelX, pixelY, pixelWidth, pixelHeight);
+        
+        this.ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+        this.ctx.fillRect(pixelX, pixelY, pixelWidth, pixelHeight);
+        this.ctx.restore();
     }
 }

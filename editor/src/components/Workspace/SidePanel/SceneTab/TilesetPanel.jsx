@@ -1,5 +1,10 @@
-import React, {useRef, useEffect, useState} from 'react';
+
+import React, { useRef, useEffect } from 'react';
 import TilesetRenderer from '../../../../renderers/TilesetRenderer';
+import TilesetInputHandler from '../../../../handlers/TilesetInputHandler';
+import { TileToolType } from '../../../../constants/ToolType';
+// Importe a sua store ou o mecanismo de gerenciamento de estado aqui:
+// import { projectStore } from '../../../../store/ProjectStore'; 
 import './TilesetPanel.css';
 
 export default function TilesetPanel({ 
@@ -13,27 +18,67 @@ export default function TilesetPanel({
 
     const canvasRef = useRef(null);
     const rendererRef = useRef(null);
+    const handlerRef = useRef(null);
 
     // Instancia o renderer do canvas quando o componente monta
     useEffect(() => {
         if (canvasRef.current && !rendererRef.current) {
             rendererRef.current = new TilesetRenderer(canvasRef.current);
         }
+
+        return () => {
+            // Limpeza geral ao desmontar
+            if (handlerRef.current) handlerRef.current.destroy();
+        };
     }, []);
 
-    // Atualiza a imagem sempre que o tileset ativo mudar
+    // Atualiza a imagem e o handler de input sempre que o tileset ativo mudar
     useEffect(() => {
-        if (rendererRef.current && activeTileset?.imagePath) {
-            rendererRef.current.loadTileset(
-                activeTileset.imagePath, 
-                activeTileset.tileWidth, 
-                activeTileset.tileHeight
-            ).catch(() => {
-                // Tratamento caso falhe o file:// direto, podemos evoluir para fetch blob se precisar
-            });
-        }
-    }, [activeTileset]);
+        if (!rendererRef.current || !activeTileset?.imagePath) return;
 
+        // Limpa o handler antigo se houver troca de tileset
+        if (handlerRef.current) {
+            handlerRef.current.destroy();
+            handlerRef.current = null;
+        }
+
+        rendererRef.current.loadTileset(
+            activeTileset.imagePath, 
+            activeTileset.tileWidth, 
+            activeTileset.tileHeight
+        ).then(() => {
+            // Desenha o tileset inicialmente sem seleção
+            rendererRef.current.render();
+
+            // Inicializa o Handler de Input agora que o canvas tem dimensões e dados reais
+            if (canvasRef.current) {
+                handlerRef.current = new TilesetInputHandler(canvasRef.current, {
+                    tileWidth: activeTileset.tileWidth,
+                    tileHeight: activeTileset.tileHeight,
+                    tilesetMatrix: rendererRef.current.tilesetMatrix, // se houver gerado no renderer
+
+                    onSelectionChange: (selectionData) => {
+                        // 1. Atualiza a store / ToolState (substitua pelo seu caminho real da store)
+                        /*
+                        projectStore.getSession().tools.setTileSelection(
+                            selectionData.width,
+                            selectionData.height,
+                            selectionData.tiles,
+                            selectionData.sourceRect
+                        );
+                        */
+                        console.log("Seleção atualizada:", selectionData);
+
+                        // 2. Pede para o renderer redesenhar a imagem + o retângulo de seleção
+                        if (rendererRef.current) {
+                             rendererRef.current.render(selectionData.sourceRect);
+                        }
+                    }
+                });
+            }
+        }).catch(() => {});
+
+    }, [activeTileset]);
 
     return (
         <div className="sidebar-section tileset-section">
@@ -59,25 +104,25 @@ export default function TilesetPanel({
                 </div>
             </div>
 
-            {/* Barra de Ferramentas de Pintura */}
+            {/* Barra de Ferramentas de Pintura (Modos de Edição) */}
             <div className="painting-toolbar">
                 <button 
-                    className={`tool-btn ${activeTool === 'brush' ? 'active' : ''}`}
-                    onClick={() => onSelectTool('brush')}
+                    className={`tool-btn ${activeTool === TileToolType.BRUSH ? 'active' : ''}`}
+                    onClick={() => onSelectTool(TileToolType.BRUSH)}
                     title="Pincel (Brush)"
                 >
                     🖌️
                 </button>
                 <button 
-                    className={`tool-btn ${activeTool === 'bucket' ? 'active' : ''}`}
-                    onClick={() => onSelectTool('bucket')}
+                    className={`tool-btn ${activeTool === TileToolType.BUCKET ? 'active' : ''}`}
+                    onClick={() => onSelectTool(TileToolType.BUCKET)}
                     title="Balde de Tinta (Fill)"
                 >
                     🪣
                 </button>
                 <button 
-                    className={`tool-btn ${activeTool === 'eraser' ? 'active' : ''}`}
-                    onClick={() => onSelectTool('eraser')}
+                    className={`tool-btn ${activeTool === TileToolType.ERASER ? 'active' : ''}`}
+                    onClick={() => onSelectTool(TileToolType.ERASER)}
                     title="Borracha (Eraser)"
                 >
                     🧹

@@ -1,7 +1,6 @@
 import ProjectModel from '../models/Project/ProjectModel.js';
 import SceneState from './SceneState.js'; // Ajuste o caminho se necessário
-import { ToolCategory } from '../constants/ToolType.js';
-import { TileToolType } from '../constants/ToolType.js';
+import ToolState from './ToolState.js';
 
 export default class ProjectStore {
     constructor() {
@@ -19,25 +18,7 @@ export default class ProjectStore {
             workingScenes: new SceneState(),
 
             // --- Passo 1: Estrutura de Ferramentas Baseada no Modelo Dinâmico ---
-            tools: {
-                activeCategory: ToolCategory.TILE, // Categoria ativa padrão (ex: 'tile', 'entity', etc.)
-        
-                tile: {
-                    activeTool: TileToolType.BRUSH,      // Ferramenta ativa ('brush', 'bucket', 'eraser')
-                    activeTilesetId: null,    // ID ou nome do tileset selecionado
-                    selection: {
-                            width: 1,
-                            height: 1,
-                            tiles: [[0]],         // Matriz bidimensional de GIDs
-                            sourceRect: {
-                                startX: 0,
-                                startY: 0,
-                                endX: 0,
-                                endY: 0
-                            }
-                        }
-                 }
-            }
+            tools: new ToolState()
            
         };
 
@@ -57,6 +38,8 @@ export default class ProjectStore {
     setSession(newSessionData) {
         this.session = newSessionData;
     }
+
+
 
 
 }
