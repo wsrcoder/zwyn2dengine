@@ -1,0 +1,72 @@
+
+.layers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    list-style: none;
+    margin: 0;
+    overflow-y: auto;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background-color: #252525;
+    border: 1px solid #333;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.layer-item:hover {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+.drag-handle {
+    color: #666;
+    cursor: grab;
+}
+
+/* O crachá/mini tag no início */
+.layer-type-badge {
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: center;
+    min-width: 32px;
+}
+
+/* Cores distintas e elegantes para cada tipo de camada */
+.layer-type-badge.tile { background: #1b4332; color: #52b788; border: 1px solid #2d6a4f; }
+.layer-type-badge.background { background: #1d3557; color: #a8dadc; border: 1px solid #457b9d; }
+.layer-type-badge.event { background: #4d2d00; color: #ffb703; border: 1px solid #b7791f; }
+.layer-type-badge.ui { background: #3c153b; color: #e5989b; border: 1px solid #6c584c; }
+
+.layer-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 0.9rem;
+}
+
+.icon-btn:hover {
+    color: #fff;
+}
