@@ -1,5 +1,6 @@
 
 
+import { ProjectParams } from '../constants/ProjectParams.js';
 import ProjectStore from '../state/ProjectStore.js';
 import ProjectService from '../services/ProjectService.js';
 import { EDITOR_EVENTS } from '../state/EventTypes.js';
@@ -185,7 +186,7 @@ export default class ProjectController {
 
             // 1. Salva o arquivo principal project.json
             const projectJsonData = session.project.toJSON();
-            const projectFilePath = `${session.rootPath}/project.json`;
+            const projectFilePath = `${session.rootPath}/${ProjectParams.PROJECT_MANIFEST_FILE}`;
             
             const saveProjectResult = await window.electronAPI.saveJsonFile(projectFilePath, projectJsonData);
             
@@ -205,7 +206,7 @@ export default class ProjectController {
                         continue;
                     }
 
-                    const mapFilePath = `${session.rootPath}/Data/Maps/${fileName}`;
+                    const mapFilePath = `${session.rootPath}/${ProjectParams.DIR.SCENES}/${fileName}`;
         
                     // 1. Converte o model para objeto plano JSON
                     const mapDataObj = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
@@ -217,7 +218,7 @@ export default class ProjectController {
                     await window.electronAPI.saveTextFile(mapFilePath, mapJsonString);
 
                     // Localiza a entrada original no cache para resetar a flag
-                    const originalEntry = session.workingScenes.getSceneById(sceneId);
+                    const originalEntry = session.workingScenes.getScene(sceneId);
                     if (originalEntry) {
                         originalEntry.isModified = false;
                     }
