@@ -12,7 +12,7 @@ export default class ToolState {
                     selection: {
                             width: 1,
                             height: 1,
-                            tiles: [[0]],         // Matriz bidimensional de GIDs
+                            tiles: [0],         // Matriz bidimensional de GIDs
                             sourceRect: {
                                 startX: 0,
                                 startY: 0,

@@ -39,6 +39,21 @@ export default class ProjectStore {
         this.session = newSessionData;
     }
 
+    /**
+     * Retorna o estado atual das ferramentas.
+     */
+    getToolState() {
+        return this.session.tools;
+    }
+
+    /**
+     * Define ou atualiza o estado das ferramentas na sessão.
+     */
+    setToolState(newToolState) {
+        if (this.session) {
+            this.session.tools = newToolState;
+        }
+    }
 
 
 

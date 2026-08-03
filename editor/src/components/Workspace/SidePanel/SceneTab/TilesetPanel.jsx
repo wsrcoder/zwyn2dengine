@@ -4,6 +4,7 @@ import TilesetInputHandler from '../../../../handlers/TilesetInputHandler';
 import { TileToolType } from '../../../../constants/ToolType';
 import { EventHandler } from '../../../../state/EventBus';
 import { EDITOR_EVENTS } from '../../../../state/EventTypes';
+import { TileUtils } from '../../../../utils/TileUtils';
 import './TilesetPanel.css';
 
 export default function TilesetPanel({ 
@@ -81,17 +82,57 @@ export default function TilesetPanel({
                     onSelectionChange: (selectionData) => {
                         if (projectStore) {
                             try {
-                                projectStore.getSession().tools.setTileSelection(
+                                const session = projectStore.getSession();
+                                const activeWorldId = session.navigation.activeWorldId;
+                                const activeSceneId = session.navigation.activeSceneId;
+
+                                // Busca a cena atual no workingScenes
+                                const sceneData = session.workingScenes.getScene(activeWorldId, activeSceneId);
+                                const mapModel = sceneData ? sceneData.data : null;
+
+                                // Pega o tileset associado à cena (geralmente um array ou mapa de tilesets)
+                                // Ajuste se o seu mapModel usa mapTilesets, tilesets ou outro nome
+                                const tilesets = mapModel?.tilesets || mapModel?.mapTilesets || [];
+            
+                                // Pega o primeiro tileset ou o ativo (ex: por índice ou ID)
+                                const activeTileset = Array.isArray(tilesets) ? tilesets[0] : tilesets.values?.().next()?.value;
+            
+                                const tsColumns = activeTileset?.columns || 1;
+
+                                const rect = selectionData.sourceRect;
+                                const calculatedTiles = [];
+
+                                if (rect && typeof rect.startX === 'number') {
+                                    const minX = Math.min(rect.startX, rect.endX);
+                                    const maxX = Math.max(rect.startX, rect.endX);
+                                    const minY = Math.min(rect.startY, rect.endY);
+                                    const maxY = Math.max(rect.startY, rect.endY);
+
+                                    for (let y = minY; y <= maxY; y++) {
+                                        for (let x = minX; x <= maxX; x++) {
+                                            const tileId = y * tsColumns + x;
+                                            calculatedTiles.push(tileId);
+                                        }
+                                    }
+                                } else {
+                                    const rawTiles = selectionData.tiles || [0];
+                                    calculatedTiles.push(...(Array.isArray(rawTiles) ? rawTiles.flat() : [rawTiles]));
+                                }
+
+                                selectionData.tiles = calculatedTiles;
+                                const flattenedTiles = calculatedTiles.flat();
+
+                                session.tools.setTileSelection(
                                     selectionData.width,
                                     selectionData.height,
-                                    selectionData.tiles,
+                                    flattenedTiles,
                                     selectionData.sourceRect
                                 );
                             } catch (error) {
                                 console.error("Erro ao salvar seleção na store:", error);
                             }
                         }
-                        
+
                         EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_CHANGED, selectionData);
 
                         if (rendererRef.current) {

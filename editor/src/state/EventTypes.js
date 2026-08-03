@@ -11,8 +11,10 @@ export const EDITOR_EVENTS = Object.freeze({
     WORLDS_LIST_UPDATED: 'worldsListUpdated',
     WORLD_CHANGED: 'worldChanged',
 
-    // Categoria: Cenas / Mapas
+    //Navegação
     SCENE_CHANGED: 'sceneChanged',
+
+    // Categoria: Cenas / Mapas
     SCENE_MODIFIED: 'sceneModified',
 
     // Categoria: Ferramentas e Tiles (Novo)
