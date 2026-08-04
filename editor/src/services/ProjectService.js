@@ -230,4 +230,103 @@ export default class ProjectService {
             };
         }
     }
+
+   async saveProject(session) {
+        try {
+            if (!session || !session.project || !session.rootPath) {
+                return {
+                    success: false,
+                    message: "Nenhum projeto aberto ou com caminho definido para salvar.",
+                    data: null
+                };
+            }
+
+            console.log("[ProjectService] Salvando projeto em:", session.rootPath);
+
+            // 1. Salva o arquivo principal project.json
+            const projectJsonData = typeof session.project.toJSON === 'function' 
+                ? session.project.toJSON() 
+                : session.project;
+                
+            const projectFilePath = `${session.rootPath}/${ProjectParams.PROJECT_MANIFEST_FILE}`;
+            
+            const saveProjectResult = await window.electronAPI.saveJsonFile(projectFilePath, projectJsonData);
+            
+            if (saveProjectResult && saveProjectResult.success === false) {
+                throw new Error(saveProjectResult.message || "Falha ao salvar o arquivo project.json");
+            }
+
+            // 2. Salva todas as cenas modificadas no workingScenes
+            if (session.workingScenes && typeof session.workingScenes.getModifiedScenes === 'function') {
+                const modifiedScenes = session.workingScenes.getModifiedScenes() || [];
+
+                console.log(`[ProjectService] Cenas modificadas encontradas para salvar: ${modifiedScenes.length}`);
+
+                for (const sceneEntry of modifiedScenes) {
+                    const { worldId, sceneId, fileName, data } = sceneEntry;
+                    
+                    if (!fileName) {
+                        console.warn(`[ProjectService] Cena ID ${sceneId} (Mundo ${worldId}) marcada como modificada, mas não possui fileName.`);
+                        continue;
+                    }
+
+                    const sceneFilePath = `${session.rootPath}/${ProjectParams.DIR.SCENES}/${fileName}`;
+            
+                    const sceneDataObj = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
+                    
+                    // Proteção extra caso o JsonUtils não esteja no escopo global deste arquivo
+                    const sceneJsonString = typeof JsonUtils !== 'undefined' && typeof JsonUtils.stringifyWithCompactArrays === 'function'
+                        ? JsonUtils.stringifyWithCompactArrays(sceneDataObj, ["data"])
+                        : JSON.stringify(sceneDataObj);
+
+                    const saveSceneResult = await window.electronAPI.saveTextFile(sceneFilePath, sceneJsonString);
+                    
+                    if (saveSceneResult && saveSceneResult.success === false) {
+                        throw new Error(`Falha ao salvar o arquivo de cena ${fileName}: ${saveSceneResult.message}`);
+                    }
+
+                    // Reseta a flag de modificação da cena individual no cache
+                    const originalEntry = session.workingScenes.getScene(worldId, sceneId);
+                    if (originalEntry) {
+                        originalEntry.isModified = false;
+                    }
+                    
+                    console.log(`[ProjectService] Cena ${fileName} salva com sucesso.`);
+                }
+            }
+
+            // 3. APLICA A REGRA DE OURO COM BLINDAGEM: Descarrega tudo e mantém apenas a cena corrente
+            const activeWorldId = session.navigation?.activeWorldId;
+            const activeSceneId = session.navigation?.activeSceneId;
+
+            if (activeWorldId !== undefined && activeWorldId !== null && 
+                activeSceneId !== undefined && activeSceneId !== null && 
+                session.workingScenes && typeof session.workingScenes.keepOnly === 'function') {
+                
+                console.log(`[ProjectService] Limpando cache pós-save. Mantendo apenas a cena ativa (W:${activeWorldId}, S:${activeSceneId})...`);
+                session.workingScenes.keepOnly(activeWorldId, activeSceneId);
+            } else {
+                console.warn("[ProjectService] Impossível aplicar keepOnly pós-save: ponteiros de navegação ativos ou workingScenes inválidos.");
+            }
+
+            // 4. Reseta a flag geral da sessão
+            session.isModified = false;
+
+            return {
+                success: true,
+                message: "Projeto salvo e memória otimizada com sucesso.",
+                data: null
+            };
+
+        } catch (error) {
+            console.error("[ProjectService] Erro crítico ao salvar projeto:", error);
+            return {
+                success: false,
+                message: `Erro ao salvar o projeto: ${error.message}`,
+                data: null
+            };
+        }
+    }
+
+    
 }

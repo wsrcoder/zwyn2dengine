@@ -1,12 +1,11 @@
 
 
-import { ProjectParams } from '../constants/ProjectParams.js';
+
 import ProjectStore from '../state/ProjectStore.js';
 import ProjectService from '../services/ProjectService.js';
 import { EDITOR_EVENTS } from '../state/EventTypes.js';
 import { EventHandler } from '../state/EventBus.js';
 
-import { JsonUtils } from '../utils/JsonUtils.js';
 
 
 export default class ProjectController {
@@ -170,84 +169,19 @@ export default class ProjectController {
      * Salva o projeto atual completo no disco (project.json + cenas modificadas no workingScenes).
      */
     async save() {
-        try {
-            const session = this.projectStore.getSession();
-
-            // Valida se há um projeto ativo e um caminho raiz definido
-            if (!session || !session.project || !session.rootPath) {
-                return {
-                    success: false,
-                    message: "Nenhum projeto aberto ou com caminho definido para salvar.",
-                    data: null
-                };
-            }
-
-            console.log("[ProjectController] Salvando projeto em:", session.rootPath);
-
-            // 1. Salva o arquivo principal project.json
-            const projectJsonData = session.project.toJSON();
-            const projectFilePath = `${session.rootPath}/${ProjectParams.PROJECT_MANIFEST_FILE}`;
-            
-            const saveProjectResult = await window.electronAPI.saveJsonFile(projectFilePath, projectJsonData);
-            
-            if (saveProjectResult && saveProjectResult.success === false) {
-                throw new Error(saveProjectResult.message || "Falha ao salvar o arquivo project.json");
-            }
-
-
-           if (session.workingScenes && typeof session.workingScenes.getModifiedScenes === 'function') {
-                const modifiedScenes = session.workingScenes.getModifiedScenes();
-
-                for (const sceneEntry of modifiedScenes) {
-                    const { sceneId, fileName, data } = sceneEntry;
-                    
-                    if (!fileName) {
-                        console.warn(`[ProjectController] Cena ID ${sceneId} marcada como modificada, mas não possui fileName.`);
-                        continue;
-                    }
-
-                    const sceneFilePath = `${session.rootPath}/${ProjectParams.DIR.SCENES}/${fileName}`;
         
-                    // 1. Converte o model para objeto plano JSON
-                    const sceneDataObj = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
-        
-                    // 2. Aplica o JsonUtils para compactar os arrays (ex: "data": [...]) em uma única linha
-                    const sceneJsonString = JsonUtils.stringifyWithCompactArrays(sceneDataObj, ["data"]);
+        const session = this.projectStore.getSession();
+        const result = await this.projectService.saveProject(session);
 
-                    // 3. Salva como texto no disco, preservando a formatação customizada
-                    await window.electronAPI.saveTextFile(sceneFilePath, sceneJsonString);
-
-                    // Localiza a entrada original no cache para resetar a flag
-                    const originalEntry = session.workingScenes.getScene(sceneId);
-                    if (originalEntry) {
-                        originalEntry.isModified = false;
-                    }
-                    
-                    console.log(`[ProjectController] Cena ${fileName} salva com sucesso.`);
-                }
-            }
-
-            // 3. Reseta a flag geral de modificação da sessão
-            session.isModified = false;
-
-            // Notifica que o projeto foi salvo (útil para atualizar a UI, sumir com asteriscos de "não salvo", etc.)
+        if (result.success) {
+            // Notifica o sistema de que o projeto foi salvo (limpa asteriscos de alterado na UI, etc.)
             EventHandler.notify(EDITOR_EVENTS.PROJECT_SAVED);
-
-            console.log("[ProjectController] Projeto salvo com sucesso!");
-            return {
-                success: true,
-                message: "Projeto salvo com sucesso.",
-                data: null
-            };
-
-        } catch (error) {
-            console.error("[ProjectController] Erro ao salvar projeto:", error);
-            return {
-                success: false,
-                message: `Erro ao salvar o projeto: ${error.message}`,
-                data: null
-            };
+            console.log("[ProjectController] Save concluído com sucesso.");
+        } else {
+            console.error("[ProjectController] Falha ao salvar:", result.message);
         }
+
+        return result;
     }
 
 }
