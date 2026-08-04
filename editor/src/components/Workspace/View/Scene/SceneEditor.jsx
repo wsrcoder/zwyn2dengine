@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import SceneRenderer from '../../../../renderers/SceneRenderer';
 import SceneInputHandler from '../../../../handlers/SceneInputHandler';
-import { EventHandler } from '../../../../state/EventBus';
-import { EDITOR_EVENTS } from '../../../../state/EventTypes';
+import { EventHandler } from '../../../../core/EventBus';
+import { EDITOR_EVENTS } from '../../../../core/EventTypes';
 
 export default function SceneEditor({ projectStore }) {
     const canvasRef = useRef(null);

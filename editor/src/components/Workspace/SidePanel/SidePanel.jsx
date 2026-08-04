@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import WorldPanel from './WorldTab/WorldPanel.jsx';
 import ScenePanel from './SceneTab/ScenePanel.jsx';
 import EventPanel from './EventTab/EventPanel.jsx';
-import { EventHandler } from '../../../state/EventBus.js';
-import { EDITOR_EVENTS } from '../../../state/EventTypes.js';
+import { EventHandler } from '../../../core/EventBus.js';
+import { EDITOR_EVENTS } from '../../../core/EventTypes.js';
 import './SidePanel.css';
 
 export default function SidePanel({ 

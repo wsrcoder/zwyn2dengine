@@ -1,9 +1,9 @@
 
 
-import ProjectStore from "../state/ProjectStore";
+import ProjectStore from "../core/ProjectStore";
 import worldService from "../services/worldService";
-import { EventHandler } from "../state/EventBus";
-import { EDITOR_EVENTS } from "../state/EventTypes";
+import { EventHandler } from "../core/EventBus";
+import { EDITOR_EVENTS } from "../core/EventTypes";
 
 export default class WorldController {
     constructor(projectStore, worldService) {

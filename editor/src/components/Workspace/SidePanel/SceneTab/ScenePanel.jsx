@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { EventHandler } from '../../../../state/EventBus.js';
-import { EDITOR_EVENTS } from '../../../../state/EventTypes.js';
+import { EventHandler } from '../../../../core/EventBus.js';
+import { EDITOR_EVENTS } from '../../../../core/EventTypes.js';
 import { ProjectParams } from '../../../../constants/ProjectParams.js'; // Ajuste o caminho se necessário
 import LayerPanel from './LayerPanel.jsx';
 import TilesetPanel from './TilesetPanel.jsx';

@@ -1,6 +1,6 @@
 
 import { Modal } from "../ui/modals/Modal";
-import SceneState from "../state/SceneState";
+import SceneState from "../core/SceneState";
 /**
  * src/handlers/projectHandlers.js
  * 

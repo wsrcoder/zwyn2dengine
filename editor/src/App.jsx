@@ -9,7 +9,7 @@ import { createProjectHandlers } from './handlers/projectHandlers';
 import WorkspaceEditor from './components/workspace/WorkspaceEditor';
 
 // Instâncias da sua arquitetura
-import ProjectStore from './state/ProjectStore';
+import ProjectStore from './core/ProjectStore';
 import ProjectService from './services/ProjectService';
 import WorldService from './services/WorldService';
 import ProjectController from './controllers/ProjectController';

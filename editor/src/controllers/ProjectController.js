@@ -1,10 +1,10 @@
 
 
 
-import ProjectStore from '../state/ProjectStore.js';
+import ProjectStore from '../core/ProjectStore.js';
 import ProjectService from '../services/ProjectService.js';
-import { EDITOR_EVENTS } from '../state/EventTypes.js';
-import { EventHandler } from '../state/EventBus.js';
+import { EDITOR_EVENTS } from '../core/EventTypes.js';
+import { EventHandler } from '../core/EventBus.js';
 
 
 
@@ -169,7 +169,7 @@ export default class ProjectController {
      * Salva o projeto atual completo no disco (project.json + cenas modificadas no workingScenes).
      */
     async save() {
-        
+
         const session = this.projectStore.getSession();
         const result = await this.projectService.saveProject(session);
 

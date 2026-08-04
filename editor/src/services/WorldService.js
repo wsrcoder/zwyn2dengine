@@ -1,6 +1,6 @@
 import {ProjectParams} from "../constants/ProjectParams";
 import SceneModel from "../models/Scene/SceneModel";
-import SceneState from "../state/SceneState";
+import SceneState from "../core/SceneState";
 
 
 export default class WorldService {

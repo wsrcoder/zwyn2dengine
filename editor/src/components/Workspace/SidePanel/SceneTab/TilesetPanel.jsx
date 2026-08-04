@@ -2,8 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import TilesetRenderer from '../../../../renderers/TilesetRenderer';
 import TilesetInputHandler from '../../../../handlers/TilesetInputHandler';
 import { TileToolType } from '../../../../constants/ToolType';
-import { EventHandler } from '../../../../state/EventBus';
-import { EDITOR_EVENTS } from '../../../../state/EventTypes';
+import { EventHandler } from '../../../../core/EventBus';
+import { EDITOR_EVENTS } from '../../../../core/EventTypes';
 import { TileUtils } from '../../../../utils/TileUtils';
 import './TilesetPanel.css';
 

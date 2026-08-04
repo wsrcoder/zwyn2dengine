@@ -1,8 +1,8 @@
 
 // src/components/TopMenuContainer.jsx
 import React, { useState, useEffect } from 'react';
-import { EventHandler } from '../../state/EventBus';
-import { EDITOR_EVENTS } from '../../state/EventTypes';
+import { EventHandler } from '../../core/EventBus';
+import { EDITOR_EVENTS } from '../../core/EventTypes';
 import FileMenu from './FileMenu';
 
 export default function TopMenuContainer({ projectStore, handlers }) {
