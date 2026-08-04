@@ -43,7 +43,7 @@ export default function ScenePanel({ projectController, projectStore }) {
 
     // 2. Extrai os tilesets e resolve o caminho físico da imagem
     const tilesets = activeScene?.tilesets ? activeScene.tilesets.map(ts => {
-        const fileName = ts.image?.fileName || '';
+        const fileName = ts.imageFile?.name || '';
         // Monta o caminho local estruturado com os Enums
         const imagePath = rootPath ? `${rootPath}/${ProjectParams.DIR.TILESETS}/${fileName}` : '';
         

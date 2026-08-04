@@ -1,4 +1,6 @@
 
+import { BackgroundLayerEnum } from "../../constants/Enums.js";
+
 export class BackgroundLayerModel {
     constructor(data = {}) {
         this.id = data.id ?? 0;
@@ -18,11 +20,11 @@ export class BackgroundLayerModel {
         };
 
         // Atributo condicional baseado no tipo (Economia de dados!)
-        if (this.type === "image") {
+        if (this.type === BackgroundLayerEnum.IMAGE) {
             this.imagePath = data.imagePath ?? "";
             this.repeatX = data.repeatX ?? true;
             this.repeatY = data.repeatY ?? false;
-        } else if (this.type === "tiles") {
+        } else if (this.type === BackgroundLayerEnum.TILE) {
             this.columns = data.columns ?? 20;
             this.rows = data.rows ?? 15;
             this.data = data.data || new Array(this.columns * this.rows).fill(0);
@@ -44,11 +46,11 @@ export class BackgroundLayerModel {
         };
 
         // Salva apenas os dados pertinentes ao tipo escolhido
-        if (this.type === "image") {
+        if (this.type === BackgroundLayerEnum.IMAGE) {
             baseJson.imagePath = this.imagePath;
             baseJson.repeatX = this.repeatX;
             baseJson.repeatY = this.repeatY;
-        } else if (this.type === "tiles") {
+        } else if (this.type === BackgroundLayerEnum.TILE) {
             baseJson.columns = this.columns;
             baseJson.rows = this.rows;
             baseJson.data = [...this.data];

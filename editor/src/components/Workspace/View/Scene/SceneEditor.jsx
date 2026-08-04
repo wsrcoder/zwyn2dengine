@@ -58,7 +58,7 @@ export default function SceneEditor({ projectStore }) {
 
                     const mapModel = sceneData.data;
                     const activeIndex = mapModel.activeLayerIndex ?? 0;
-                    const layer = mapModel.mapLayers?.[activeIndex];
+                    const layer = mapModel.tileLayers?.[activeIndex];
 
                     if (!layer) return;
 
@@ -149,10 +149,10 @@ export default function SceneEditor({ projectStore }) {
                         return null;
                     }
                     
-                    const mapModel = sceneData.data;
-                    const activeIndex = mapModel.activeLayerIndex ?? 0;
-                    const layer = mapModel.mapLayers && mapModel.mapLayers.length > 0 
-                        ? mapModel.mapLayers[activeIndex] 
+                    const _scene = sceneData.data;
+                    const activeIndex = _scene.activeLayerIndex ?? 0;
+                    const layer = _scene.tileLayers && _scene.tileLayers.length > 0 
+                        ? _scene.tileLayers[activeIndex] 
                         : null;
 
                     console.log("📑 [SceneEditor] Camada ativa encontrada:", layer);

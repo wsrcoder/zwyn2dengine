@@ -17,3 +17,9 @@ export const SceneRenderOrderEnum = Object.freeze({
     LEFT_DOWN: "LEFT_DOWN",
     LEFT_UP: "LEFT_UP"
 });
+
+export const BackgroundLayerEnum = Object.freeze({
+    IMAGE: 'image',
+    TILE: 'tile',
+
+});

@@ -25,7 +25,7 @@ export default class SceneRenderer {
         if (!tilesetData) return;
 
         this.currentTileset = tilesetData;
-        const imagePath = `${ProjectParams.DIR.TILESETS}/${tilesetData.image?.fileName}`;
+        const imagePath = `${ProjectParams.DIR.TILESETS}/${tilesetData.imageFile?.name}`;
 
         if (!imagePath) {
             this.loadedImage = null;
@@ -74,11 +74,11 @@ export default class SceneRenderer {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const { mapLayers, tileWidth = 32, tileHeight = 32 } = this.currentScene;
+        const { tileLayers, tileWidth = 32, tileHeight = 32 } = this.currentScene;
 
-        if (!mapLayers || !Array.isArray(mapLayers)) return;
+        if (!tileLayers || !Array.isArray(tileLayers)) return;
 
-        for (const layer of mapLayers) {
+        for (const layer of tileLayers) {
             if (!layer || !layer.visible || !layer.data) continue;
 
             const cols = layer.columns;

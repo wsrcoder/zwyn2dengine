@@ -5,21 +5,22 @@ import { BackgroundLayerModel } from "./BackgroundLayerModel.js";
 import { TilesetModel } from "./TilesetModel.js";
 import { EventLayerModel } from "./EventLayerModel.js";
 import { TerrainLayerModel } from "./TerrainLayerModel.js";
+import {SceneOrientationEnum, SceneRenderOrderEnum} from "../../constants/Enums.js";
 
 export default class SceneModel {
     constructor(data = {}) {
         this.id = data.id ?? 1;
         this.worldId = data.worldId ?? 1;
         this.type = data.type ?? "scene";
-        this.name = data.name ?? "Scene1";
+        this.name = data.name ?? "Scene";
         this.columns = data.columns ?? 20;
         this.rows = data.rows ?? 15;
         this.tile = {
             width: data.tile?.width ?? 32,
             height: data.tile?.height ?? 32
         };
-        this.orientation = data.orientation ?? "orthogonal";
-        this.renderOrder = data.renderorder ?? data.renderOrder ?? "right-down";
+        this.orientation = data.orientation ?? SceneOrientationEnum.ORTHOGONAL;
+        this.renderOrder = data.renderorder ?? data.renderOrder ?? SceneRenderOrderEnum.RIGHT_DOWN;
         this.properties = data.properties ?? {};
 
         // Inicializa as coleções usando os Models correspondentes

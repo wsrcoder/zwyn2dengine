@@ -4,6 +4,7 @@ import SceneModel from '../models/Scene/SceneModel.js';
 
 import { ImageUtils } from '../utils/ImageUtils.js';
 import { JsonUtils } from '../utils/JsonUtils.js';
+import IdUtils from '../utils/IdUtils.js';
 import SceneState from '../state/SceneState.js';
 
 import { ProjectParams } from '../constants/ProjectParams.js';
