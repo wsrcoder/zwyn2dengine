@@ -1,4 +1,5 @@
 
+
 import ProjectStore from "../state/ProjectStore";
 import worldService from "../services/worldService";
 import { EventHandler } from "../state/EventBus";
@@ -41,6 +42,17 @@ export default class WorldController {
                 data: null
             };
         }
+    }
+
+    async setActiveWorld(worldId) {
+        const session = this.projectStore.session;
+        const result = await this.worldService.setActiveWorld(session, worldId);
+
+        if (result.success) {
+            EventHandler.notify(EDITOR_EVENTS.WORLD_CHANGED, { worldId });
+        }
+
+        return result;
     }
 
     async createScene(worldId, columns=20, rows=15) {
@@ -178,14 +190,42 @@ export default class WorldController {
     /**
      * Retorna a cena atualmente ativa na sessão.
      */
-    getCurrentScene() {
+    /**
+     * Recupera a cena ativa atual do workingScenes com base nos ponteiros de navegação da sessão.
+     */
+    getActiveScene() {
         try {
-            const sceneModel = this.projectStore.getSession()?.world?.scenes?.getActiveScene() || null;
+            const session = this.projectStore.getSession ? this.projectStore.getSession() : this.projectStore.session;
+            
+            if (!session || !session.navigation || !session.workingScenes) {
+                return {
+                    success: false,
+                    message: "Sessão ou estruturas de navegação não inicializadas.",
+                    data: null
+                };
+            }
+
+            const worldId = session.navigation.activeWorldId;
+            const sceneId = session.navigation.activeSceneId;
+
+            if (worldId === null || worldId === undefined || sceneId === null || sceneId === undefined) {
+                return {
+                    success: false,
+                    message: "Nenhuma cena ativa no momento (ponteiros de navegação vazios).",
+                    data: null
+                };
+            }
+
+            // Busca a cena no workingScenes usando o worldId e sceneId ativos
+            const sceneWrapper = session.workingScenes.getScene ? session.workingScenes.getScene(worldId, sceneId) : null;
+            
+            // Se o wrapper existir, o model real da cena geralmente está em .data
+            const sceneModel = sceneWrapper?.data || sceneWrapper;
 
             if (!sceneModel) {
                 return {
                     success: false,
-                    message: "Nenhuma cena ativa no momento.",
+                    message: `Cena ativa (World: ${worldId}, Scene: ${sceneId}) não encontrada no cache de memória.`,
                     data: null
                 };
             }
@@ -207,49 +247,29 @@ export default class WorldController {
     /**
      * Define uma nova cena como ativa, carregando-a via service e atualizando a store.
      */
-    async setCurrentScene(worldId, sceneId) {
-        if (!worldId || !sceneId) {
+    async setActiveScene(worldId, sceneId) {
+
+        const session = this.projectStore.getSession();
+    
+        // Delega a lógica pesada e o carregamento para o Service
+        const result = await this.worldService.setActiveScene(session, worldId, sceneId);
+    
+        if (!result.success) {
             return {
                 success: false,
-                message: "IDs de mundo ou cena inválidos.",
+                message: `[WorldController] ${result.message}`,
                 data: null
             };
         }
 
-        try {
-            const session = this.projectStore.getSession();
+        // Apenas atualiza a navegação na session e notifica o EventBus
+        session.navigation.activeWorldId = worldId;
+        session.navigation.activeSceneId = sceneId;
 
-            // 1. Usa o worldService para buscar a cena no disco/cache
-            const sceneModel = await this.worldService.getById(session, worldId, sceneId);
+        EventHandler.notify(EDITOR_EVENTS.SCENE_CHANGED, { worldId, sceneId });
 
-            if (!sceneModel) {
-                return {
-                    success: false,
-                    message: `Cena com ID ${sceneId} não foi encontrada.`,
-                    data: null
-                };
-            }
-
-            // 2. Atualiza os ponteiros de navegação diretamente na Store
-            session.world.navigation.activeWorldId = worldId;
-            session.world.navigation.activeSceneId = sceneId;
-            session.isModified = true; // Marca que o estado mudou
-
-            return {
-                success: true,
-                message: "Cena ativa alterada com sucesso.",
-                data: sceneModel
-            };
-
-        } catch (error) {
-            return {
-                success: false,
-                message: `Erro interno ao definir cena atual: ${error.message}`,
-                data: null
-            };
-        }
+        return result;
     }
-
 
     async updateSceneName(sceneId, newName) {
         if (!newName || !newName.trim()) {

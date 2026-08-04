@@ -70,8 +70,8 @@ export default function WorldsTab({ projectController, worldController, projectS
     // Ações de Mundo
     const handleSelectWorld = async (worldId) => {
         console.log("[WorldsTab] Selecionando mundo:", worldId);
-        if (projectController && typeof projectController.setActiveWorld === 'function') {
-            await projectController.setActiveWorld(worldId);
+        if (worldController && typeof worldController.setActiveWorld === 'function') {
+            await worldController.setActiveWorld(worldId);
         } else {
             projectStore.session.navigation.activeWorldId = worldId;
         }
@@ -100,8 +100,8 @@ export default function WorldsTab({ projectController, worldController, projectS
     // Ações de Cena
     const handleSelectScene = async (sceneId) => {
         console.log("[WorldsTab] Selecionando cena:", sceneId);
-        if (projectController && typeof projectController.setActiveScene === 'function') {
-            await projectController.setActiveScene(sceneId);
+        if (worldController && typeof worldController.setActiveScene === 'function') {
+            await worldController.setActiveScene(activeWorldId, sceneId);
         } else {
             projectStore.session.navigation.activeSceneId = sceneId;
         }

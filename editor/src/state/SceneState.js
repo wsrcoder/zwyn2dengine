@@ -4,12 +4,11 @@ export default class SceneState {
         this.cache = new Map(); // Armazena { worldId, fileName, mapDataModel, isModified, isDeleted }
     }
 
-
     /**
      * Adiciona ou atualiza uma cena no cache.
      */
-    setScene(worldId=1, sceneId=1, sceneData) {
-        const uniquekey = `${worldId}_${sceneId}`
+    setScene(worldId = 1, sceneId = 1, sceneData) {
+        const uniquekey = `${worldId}_${sceneId}`;
         this.cache.set(uniquekey, {
             worldId: worldId,
             sceneId: sceneId,
@@ -20,7 +19,17 @@ export default class SceneState {
         });
     }
 
-    //novo metodo para obter a scene
+    /**
+     * Retorna true se a cena especificada já estiver no cache de memória.
+     */
+    hasScene(worldId, sceneId) {
+        const uniqueKey = `${worldId}_${sceneId}`;
+        return this.cache.has(uniqueKey);
+    }
+
+    /**
+     * Retorna a cena do cache.
+     */
     getScene(worldId, sceneId) {
         return this.cache.get(`${worldId}_${sceneId}`) || null;
     }
@@ -30,7 +39,21 @@ export default class SceneState {
      */
     clear() {
         this.cache.clear();
-        this.activeSceneId = null;
+    }
+
+    /**
+     * Descarrega tudo da memória, mantendo estritamente apenas a cena corrente informada.
+     * Perfeito para rodar logo após o save bem-sucedido!
+     */
+    keepOnly(worldId, sceneId) {
+        const uniqueKey = `${worldId}_${sceneId}`;
+        const currentScene = this.cache.get(uniqueKey);
+        
+        this.cache.clear();
+
+        if (currentScene) {
+            this.cache.set(uniqueKey, currentScene);
+        }
     }
 
     /**
@@ -53,7 +76,6 @@ export default class SceneState {
         return this.cache;
     }
 
-    // Atualizado para receber o worldId e usar a chave composta
     markAsModified(worldId, sceneId) {
         const uniqueKey = `${worldId}_${sceneId}`;
         const entry = this.cache.get(uniqueKey);
@@ -62,7 +84,6 @@ export default class SceneState {
         }
     }
 
-    // Atualizado para desestruturar ou extrair corretamente a chave composta se necessário
     getModifiedScenes() {
         const modified = [];
         for (const [uniqueKey, entry] of this.cache.entries()) {
@@ -70,7 +91,7 @@ export default class SceneState {
                 modified.push({ 
                     uniqueKey, 
                     worldId: entry.worldId,
-                    sceneId: entry.sceneId, 
+                    sceneId: sceneId, 
                     ...entry 
                 });
             }

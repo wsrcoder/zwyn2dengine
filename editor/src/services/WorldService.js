@@ -68,6 +68,55 @@ export default class WorldService {
         }
     }
 
+    /**
+     * Define um mundo como ativo na sessão do projeto.
+     * @param {Object} session - A sessão atual do projeto
+     * @param {number|string} worldId - ID do mundo a ser ativado
+     * @returns {Object} Resultado da operação com sucesso e dados do mundo
+     */
+    async setActiveWorld(session, worldId) {
+        if (!session || !session.project) {
+            return {
+                success: false,
+                message: "Nenhum projeto ou sessão ativa encontrada.",
+                data: null
+            };
+        }
+
+        // 1. Busca o mundo no projeto
+        const world = session.project.getWorldById(worldId);
+
+        if (!world) {
+            return {
+                success: false,
+                message: `Mundo ${worldId} não encontrado no projeto.`,
+                data: null
+            };
+        }
+
+        // 2. Atualiza o ponteiro de mundo ativo na navegação da sessão
+        session.navigation.activeWorldId = worldId;
+
+        // Opcional inteligente: Se o mundo mudou e a cena ativa atual não pertence a este mundo,
+        // podemos opcionalmente selecionar a primeira cena deste novo mundo por padrão (ou deixar null).
+        // Vamos manter seguro: se o mundo não tiver a cena ativa atual, podemos resetar ou manter.
+        const currentSceneId = session.navigation.activeSceneId;
+        const hasSceneInNewWorld = world.scenes.some(s => s.id === currentSceneId);
+
+        if (!hasSceneInNewWorld && world.scenes.length > 0) {
+            // Opcionalmente seleciona a primeira cena do novo mundo para evitar conflitos visuais
+            // session.navigation.activeSceneId = world.scenes[0].id;
+        }
+
+        console.log(`[WorldService] Mundo ${worldId} (${world.name}) ativado com sucesso.`);
+
+        return {
+            success: true,
+            message: "Mundo ativado com sucesso.",
+            data: world
+        };
+    }
+
     createScene(session, columns = 20, rows = 15) {
         try {
             const activeWorldId = session.navigation?.activeWorldId;
@@ -353,6 +402,58 @@ export default class WorldService {
                 data: null
             };
         }
+    }
+
+
+    async setActiveScene(session, worldId, sceneId) {
+        // 1. Descobre qual é o arquivo da cena no manifesto do projeto
+        const world = session.project.getWorldById(worldId);
+        const sceneManifest = world?.scenes.find(s => s.id === sceneId);
+
+        if (!sceneManifest) {
+            return {
+                success: false,
+                message: `Manifesto da cena ${sceneId} não encontrado no mundo ${worldId}`,
+                data: null
+            };
+        }
+
+        // 2. Verifica se a cena já está carregada no cache da sessão (workingScenes)
+        if (!session.workingScenes.hasScene(worldId, sceneId)) {
+            console.log(`[WorldService] Cena ${sceneId} não está na memória. Carregando do disco...`);
+        
+            const filePath = `${session.rootPath}/${ProjectParams.DIR.SCENES}/${sceneManifest.fileName}`;
+            const rawData = await window.electronAPI.loadJsonFile(filePath);
+
+            if (!rawData) {
+                return {
+                    success: false,
+                    message: `Falha ao carregar o arquivo da cena do disco: ${filePath}`,
+                    data: null
+                };
+            }
+
+            // Instancia o Model da Cena estritamente aqui no Service
+            const sceneModel = new SceneModel(rawData);
+
+            // Injeta no workingScenes
+            session.workingScenes.setScene(worldId, sceneId, {
+                worldId: worldId,
+                sceneId: sceneId,
+                data: sceneModel,
+                fileName: sceneManifest.fileName,
+                isModified: false,
+                isDeleted: false
+            });
+        } else {
+            console.log(`[WorldService] Cena ${sceneId} já está em cache na memória.`);
+        }
+
+        return {
+            success: true,
+            message: "Cena ativada com sucesso.",
+            data: session.workingScenes.getScene(worldId, sceneId).data
+        };
     }
 
     
