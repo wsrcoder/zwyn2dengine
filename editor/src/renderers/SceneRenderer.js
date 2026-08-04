@@ -262,8 +262,8 @@ export default class SceneRenderer {
     calculateSourceCoordinates(tileId, tilesetData) {
         const firstgid = tilesetData.firstgid || 1;
         
-        // Adicionamos +1 aqui para compensar o deslocamento de 1 coluna que estava empurrando o recorte
-        const localId = Math.max(0, (tileId - firstgid) + 1);
+       
+        const localId = Math.max(0, (tileId - firstgid) );
         
         const tWidth = (tilesetData.tile && tilesetData.tile.width) || tilesetData.tileWidth || this.tileWidth;
         const tHeight = (tilesetData.tile && tilesetData.tile.height) || tilesetData.tileHeight || this.tileHeight;

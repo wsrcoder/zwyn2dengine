@@ -126,6 +126,9 @@ export default function TilesetPanel({
                                     const rect = selectionData.sourceRect;
                                     const calculatedTiles = [];
 
+                                    // Pega o firstgid correto do tileset ativo (geralmente 1 se for o primeiro/único)
+                                    const firstGid = activeTs?.firstgid || 1;
+
                                     if (rect && typeof rect.startX === 'number') {
                                         const minX = Math.min(rect.startX, rect.endX);
                                         const maxX = Math.max(rect.startX, rect.endX);
@@ -134,13 +137,17 @@ export default function TilesetPanel({
 
                                         for (let y = minY; y <= maxY; y++) {
                                             for (let x = minX; x <= maxX; x++) {
-                                                const tileId = y * tsColumns + x;
+                                                // Soma o firstgid para alinhar o índice visual da matriz com o motor de renderização
+                                                const tileId = (y * tsColumns + x) + firstGid;
                                                 calculatedTiles.push(tileId);
                                             }
                                         }
                                     } else {
                                         const rawTiles = selectionData.tiles || [0];
-                                        calculatedTiles.push(...(Array.isArray(rawTiles) ? rawTiles.flat() : [rawTiles]));
+                                        const flatRaw = Array.isArray(rawTiles) ? rawTiles.flat() : [rawTiles];
+                                        // Aplica o deslocamento do firstgid caso os tiles crus venham em base 0
+                                        const adjustedTiles = flatRaw.map(id => id === 0 ? 0 : id + (firstGid - 1));
+                                        calculatedTiles.push(...adjustedTiles);
                                     }
 
                                     selectionData.tiles = calculatedTiles;
