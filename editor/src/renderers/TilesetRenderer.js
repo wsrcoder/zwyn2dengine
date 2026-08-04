@@ -9,33 +9,27 @@ export default class TilesetRenderer {
         this.isLoaded = false;
     }
 
-    async loadTileset(imagePath, tileWidth = 32, tileHeight = 32) {
+    /**
+     * Define a imagem e as dimensões do tile, marcando como carregado e redimensionando o canvas.
+     * @param {HTMLImageElement} imageElement 
+     * @param {number} tileWidth 
+     * @param {number} tileHeight 
+     */
+    setLoadedImage(imageElement, tileWidth = 32, tileHeight = 32) {
+        this.image = imageElement;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.isLoaded = false;
+        this.isLoaded = !!imageElement;
 
-        try {
-            // Pede para o Electron ler o arquivo em segurança e retornar a string base64
-            const dataUrl = await window.electronAPI.loadBinaryFile(imagePath);
-
-            return new Promise((resolve, reject) => {
-                this.image = new Image();
-                this.image.onload = () => {
-                    this.isLoaded = true;
-                    this.resizeCanvas();
-                    this.render();
-                    resolve();
-                };
-                this.image.onerror = (err) => {
-                    console.error("[TilesetRenderer] Erro ao instanciar imagem:", err);
-                    reject(err);
-                };
-                this.image.src = dataUrl;
-            });
-        } catch (error) {
-            console.error("[TilesetRenderer] Falha ao carregar binário do tileset:", error);
-            throw error;
+        if (this.isLoaded) {
+            this.resizeCanvas();
+            this.render();
         }
+    }
+
+    // Alias caso algum componente chame apenas 'setImage'
+    setImage(imageElement, tileWidth, tileHeight) {
+        this.setLoadedImage(imageElement, tileWidth, tileHeight);
     }
 
     resizeCanvas() {
@@ -60,7 +54,7 @@ export default class TilesetRenderer {
     }
 
     drawGrid() {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.image) return;
 
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         this.ctx.lineWidth = 1;

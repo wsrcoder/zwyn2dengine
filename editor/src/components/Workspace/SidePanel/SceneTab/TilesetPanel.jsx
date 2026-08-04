@@ -47,13 +47,13 @@ export default function TilesetPanel({
         }
     };
 
-    // Instancia o renderer e gerencia o carregamento do tileset / handler de input
+    // Instancia o renderer e consome o tileset diretamente do TilesetCache global da sessão
     useEffect(() => {
         if (canvasRef.current && !rendererRef.current) {
             rendererRef.current = new TilesetRenderer(canvasRef.current);
         }
 
-        if (!rendererRef.current || !activeTileset?.imagePath) return;
+        if (!rendererRef.current || !activeTileset || !projectStore) return;
 
         // Limpa o handler antigo se houver troca de tileset
         if (handlerRef.current) {
@@ -61,92 +61,120 @@ export default function TilesetPanel({
             handlerRef.current = null;
         }
 
-        rendererRef.current.loadTileset(
-            activeTileset.imagePath, 
-            activeTileset.tileWidth, 
-            activeTileset.tileHeight
-        ).then(() => {
-            // Desenha o tileset inicialmente sem seleção
-            rendererRef.current.render();
+        const loadAndSetupTileset = async () => {
+            try {
+                const session = projectStore.getSession();
+                const tilesetCache = session?.tilesetCache || projectStore.getTilesetCache();
+                const rootPath = session?.rootPath;
 
-            // Inicializa o Handler de Input agora que o canvas tem dimensões e dados reais
-            if (canvasRef.current) {
-                handlerRef.current = new TilesetInputHandler(canvasRef.current, {
-                    tileWidth: activeTileset.tileWidth,
-                    tileHeight: activeTileset.tileHeight,
-                    tilesetMatrix: rendererRef.current.tilesetMatrix, 
+                if (!tilesetCache || !rootPath) {
+                    console.error("[TilesetPanel] Store ou rootPath inválidos para carregar o tileset.");
+                    return;
+                }
 
-                    onSelectionStart: (data) => {
-                        EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_STARTED, data);
-                    },
-                    onSelectionChange: (selectionData) => {
-                        if (projectStore) {
-                            try {
-                                const session = projectStore.getSession();
-                                const activeWorldId = session.navigation.activeWorldId;
-                                const activeSceneId = session.navigation.activeSceneId;
+                // 🚀 BUSCA DO CACHE GLOBAL OU CARREGA DO DISCO SE NÃO ESTIVER LÁ
+                // (Usando activeTileset.name já que o tileset não tem ID)
+                const tilesetId = activeTileset.name; 
 
-                                // Busca a cena atual no workingScenes
-                                const sceneData = session.workingScenes.getScene(activeWorldId, activeSceneId);
-                                const mapModel = sceneData ? sceneData.data : null;
+                const cachedEntry = await tilesetCache.getOrLoadTileset(
+                    tilesetId, 
+                    activeTileset, 
+                    rootPath
+                );
 
-                                // Pega o tileset associado à cena (geralmente um array ou mapa de tilesets)
-                                // Ajuste se o seu mapModel usa mapTilesets, tilesets ou outro nome
-                                const tilesets = mapModel?.tilesets || mapModel?.mapTilesets || [];
-            
-                                // Pega o primeiro tileset ou o ativo (ex: por índice ou ID)
-                                const activeTileset = Array.isArray(tilesets) ? tilesets[0] : tilesets.values?.().next()?.value;
-            
-                                const tsColumns = activeTileset?.columns || 1;
+                if (!cachedEntry || !cachedEntry.image) {
+                    console.error(`[TilesetPanel] Falha ao obter a imagem do tileset: ${tilesetId}`);
+                    return;
+                }
 
-                                const rect = selectionData.sourceRect;
-                                const calculatedTiles = [];
+                // Injeta a imagem e as propriedades de tile usando o método que criamos no TilesetRenderer
+                if (rendererRef.current) {
+                    rendererRef.current.setLoadedImage(
+                        cachedEntry.image, 
+                        activeTileset.tileWidth || 32, 
+                        activeTileset.tileHeight || 32
+                    );
+                }
 
-                                if (rect && typeof rect.startX === 'number') {
-                                    const minX = Math.min(rect.startX, rect.endX);
-                                    const maxX = Math.max(rect.startX, rect.endX);
-                                    const minY = Math.min(rect.startY, rect.endY);
-                                    const maxY = Math.max(rect.startY, rect.endY);
+                // Desenha o tileset inicialmente sem seleção
+                //rendererRef.current.render();
 
-                                    for (let y = minY; y <= maxY; y++) {
-                                        for (let x = minX; x <= maxX; x++) {
-                                            const tileId = y * tsColumns + x;
-                                            calculatedTiles.push(tileId);
+                // Inicializa o Handler de Input
+                if (canvasRef.current) {
+                    handlerRef.current = new TilesetInputHandler(canvasRef.current, {
+                        tileWidth: activeTileset.tileWidth,
+                        tileHeight: activeTileset.tileHeight,
+                        tilesetMatrix: rendererRef.current.tilesetMatrix, 
+
+                        onSelectionStart: (data) => {
+                            EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_STARTED, data);
+                        },
+                        onSelectionChange: (selectionData) => {
+                            if (projectStore) {
+                                try {
+                                    const session = projectStore.getSession();
+                                    const activeWorldId = session.navigation.activeWorldId;
+                                    const activeSceneId = session.navigation.activeSceneId;
+
+                                    const sceneData = session.workingScenes.getScene(activeWorldId, activeSceneId);
+                                    const mapModel = sceneData ? sceneData.data : null;
+
+                                    const tilesets = mapModel?.tilesets || mapModel?.mapTilesets || [];
+                                    const activeTs = Array.isArray(tilesets) ? tilesets[0] : tilesets.values?.().next()?.value;
+                                    const tsColumns = activeTs?.columns || 1;
+
+                                    const rect = selectionData.sourceRect;
+                                    const calculatedTiles = [];
+
+                                    if (rect && typeof rect.startX === 'number') {
+                                        const minX = Math.min(rect.startX, rect.endX);
+                                        const maxX = Math.max(rect.startX, rect.endX);
+                                        const minY = Math.min(rect.startY, rect.endY);
+                                        const maxY = Math.max(rect.startY, rect.endY);
+
+                                        for (let y = minY; y <= maxY; y++) {
+                                            for (let x = minX; x <= maxX; x++) {
+                                                const tileId = y * tsColumns + x;
+                                                calculatedTiles.push(tileId);
+                                            }
                                         }
+                                    } else {
+                                        const rawTiles = selectionData.tiles || [0];
+                                        calculatedTiles.push(...(Array.isArray(rawTiles) ? rawTiles.flat() : [rawTiles]));
                                     }
-                                } else {
-                                    const rawTiles = selectionData.tiles || [0];
-                                    calculatedTiles.push(...(Array.isArray(rawTiles) ? rawTiles.flat() : [rawTiles]));
+
+                                    selectionData.tiles = calculatedTiles;
+                                    const flattenedTiles = calculatedTiles.flat();
+
+                                    session.tools.setTileSelection(
+                                        selectionData.width,
+                                        selectionData.height,
+                                        flattenedTiles,
+                                        selectionData.sourceRect
+                                    );
+                                } catch (error) {
+                                    console.error("Erro ao salvar seleção na store:", error);
                                 }
-
-                                selectionData.tiles = calculatedTiles;
-                                const flattenedTiles = calculatedTiles.flat();
-
-                                session.tools.setTileSelection(
-                                    selectionData.width,
-                                    selectionData.height,
-                                    flattenedTiles,
-                                    selectionData.sourceRect
-                                );
-                            } catch (error) {
-                                console.error("Erro ao salvar seleção na store:", error);
                             }
-                        }
 
-                        EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_CHANGED, selectionData);
+                            EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_CHANGED, selectionData);
 
-                        if (rendererRef.current) {
-                            rendererRef.current.render(selectionData.sourceRect);
+                            if (rendererRef.current) {
+                                rendererRef.current.render(selectionData.sourceRect);
+                            }
+                        },
+                        onSelectionEnd: (data) => {
+                            EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_ENDED, data);
                         }
-                    },
-                    onSelectionEnd: (data) => {
-                        EventHandler.notify(EDITOR_EVENTS.TILE_SELECTION_ENDED, data);
-                    }
-                });
+                    });
+                }
+
+            } catch (err) {
+                console.error("Erro ao carregar tileset no painel via cache global:", err);
             }
-        }).catch((err) => {
-            console.error("Erro ao carregar tileset no painel:", err);
-        });
+        };
+
+        loadAndSetupTileset();
 
         return () => {
             if (handlerRef.current) {

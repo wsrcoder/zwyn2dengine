@@ -1,4 +1,6 @@
 
+import { ProjectParams } from '../../constants/ProjectParams.js';
+
 export default class TilesetCache {
     constructor() {
         this.cache = new Map(); // Armazena { tilesetId, name, image, data, isModified }

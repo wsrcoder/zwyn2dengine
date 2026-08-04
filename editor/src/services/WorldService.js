@@ -418,6 +418,8 @@ export default class WorldService {
             };
         }
 
+        let sceneModel = null;
+
         // 2. Verifica se a cena já está carregada no cache da sessão (workingScenes)
         if (!session.workingScenes.hasScene(worldId, sceneId)) {
             console.log(`[WorldService] Cena ${sceneId} não está na memória. Carregando do disco...`);
@@ -433,8 +435,8 @@ export default class WorldService {
                 };
             }
 
-            // Instancia o Model da Cena estritamente aqui no Service
-            const sceneModel = new SceneModel(rawData);
+            // Instancia o Model da Cena
+            sceneModel = new SceneModel(rawData);
 
             // Injeta no workingScenes
             session.workingScenes.setScene(worldId, sceneId, {
@@ -447,14 +449,30 @@ export default class WorldService {
             });
         } else {
             console.log(`[WorldService] Cena ${sceneId} já está em cache na memória.`);
+            const cachedScene = session.workingScenes.getScene(worldId, sceneId);
+            sceneModel = cachedScene.data;
+        }
+
+        // 🚀 3. GARANTE OS TILESETS SEMPRE: Roda tanto para cenas vindas do disco quanto da memória!
+        if (sceneModel && sceneModel.tilesets && Array.isArray(sceneModel.tilesets)) {
+            const tilesetCache = session.tilesetCache;
+
+            for (const t of sceneModel.tilesets) {
+                const tilesetId = t.name || t.id;
+                if (!tilesetCache.hasTileset(tilesetId)) {
+                    await tilesetCache.getOrLoadTileset(tilesetId, t, session.rootPath);
+                }
+            }
         }
 
         return {
             success: true,
             message: "Cena ativada com sucesso.",
-            data: session.workingScenes.getScene(worldId, sceneId).data
+            data: sceneModel
         };
     }
+
+
 
     
 }

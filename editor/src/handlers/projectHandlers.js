@@ -127,15 +127,7 @@ export function createProjectHandlers(projectController, worldController, projec
                         session.workingScenes = new SceneState();
                     }
 
-                    // Popula o workingScenes utilizando os dados reais retornados pelo sceneResult
-                    session.workingScenes.setScene(firstWorld.id, firstScene.id, {
-                        worldId: firstWorld.id, // Referência limpa de qual mundo essa cena pertence
-                        sceneId: firstScene.id,
-                        data: sceneResult.data, // O MapDataModel parseado do disco
-                        fileName: firstScene.fileName,
-                        isModified: false,
-                        isDeleted: false
-                    });
+                   worldController.setActiveScene(firstWorld.id, firstScene.id);
 
                     session.workingScenes.activeSceneId = firstScene.id;
                     console.log("[Handler] Mapa carregado no workingScenes da Store com sucesso!");

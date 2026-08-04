@@ -121,6 +121,24 @@ export default class ProjectService {
                 isDeleted: false
             });
 
+
+            // 🚀 Garante o carregamento dos tilesets da cena padrão no cache ao criar o projeto
+            if (session && session.tilesetCache && sceneModel && sceneModel.tilesets) {
+                const tilesetCache = session.tilesetCache;
+
+                for (const t of sceneModel.tilesets) {
+                    const tilesetId = t.name || t.id; // Usando o name já que o tileset não tem ID
+                    if (tilesetId && !tilesetCache.hasTileset(tilesetId)) {
+                        try {
+                            await tilesetCache.getOrLoadTileset(tilesetId, t, session.rootPath);
+                            console.log(`[ProjectService] Tileset inicial ${tilesetId} pré-carregado no cache com sucesso.`);
+                        } catch (err) {
+                            console.error(`[ProjectService] Erro ao pré-carregar tileset inicial ${tilesetId}:`, err);
+                        }
+                    }
+                }
+            }
+
             // Ponteiros de navegação atualizados para a raiz da sessão
             session.navigation.activeWorldId = _worldManifest.id;
             session.navigation.activeSceneId = _sceneManifest.id;

@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "updatedAt": "2026-08-04T13:16:47.484Z"
+    "updatedAt": "2026-08-04T16:59:54.883Z"
   },
   "settings": {
     "projectName": "MeuProjeto",
@@ -29,40 +29,6 @@
           "fileName": "W1S1.json",
           "columns": 20,
           "rows": 20,
-          "order": 0
-        },
-        {
-          "id": 2,
-          "worldId": 1,
-          "name": "Scene2",
-          "fileName": "W1S2.json",
-          "columns": 20,
-          "rows": 20,
-          "order": 0
-        },
-        {
-          "id": 3,
-          "worldId": 1,
-          "name": "Scene3",
-          "fileName": "W1S3.json",
-          "columns": 20,
-          "rows": 20,
-          "order": 0
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "name": "World2",
-      "order": 0,
-      "scenes": [
-        {
-          "id": 1,
-          "worldId": 2,
-          "name": "Scene1",
-          "fileName": "W2S1.json",
-          "columns": 20,
-          "rows": 15,
           "order": 0
         }
       ]

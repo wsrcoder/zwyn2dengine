@@ -3,6 +3,7 @@ import { TileType } from "../../constants/TileType"; // Ajuste o caminho se nece
 
 export class TilesetModel {
     constructor(data = {}) {
+        this.id = data.id ?? 1;
         this.firstgid = data.firstgid ?? 1;
         this.name = data.name ?? "DefaultTileset";
         this.type = data.type ?? "tileset";
@@ -83,6 +84,7 @@ export class TilesetModel {
      */
     toJSON() {
         return {
+            id: this.id,
             firstgid: this.firstgid,
             name: this.name,
             type: this.type,

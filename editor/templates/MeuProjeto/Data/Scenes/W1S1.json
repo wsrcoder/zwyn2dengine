@@ -13,6 +13,7 @@
   "renderorder": "RIGHT_DOWN",
   "tilesets": [
     {
+      "id": 1,
       "firstgid": 1,
       "name": "TTD1",
       "type": "TOP_DOWN",
