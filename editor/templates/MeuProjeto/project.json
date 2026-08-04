@@ -1,14 +1,14 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "updatedAt": "2026-07-31T05:06:12.500Z"
+    "updatedAt": "2026-08-04T02:04:31.694Z"
   },
   "settings": {
     "projectName": "MeuProjeto",
     "grid": {
       "default": {
         "columns": 20,
-        "rows": 15
+        "rows": 20
       }
     }
   },
@@ -21,10 +21,6 @@
       "id": 1,
       "name": "Main World",
       "order": 1,
-      "metadata": {
-        "description": "",
-        "properties": {}
-      },
       "scenes": [
         {
           "id": 1,
@@ -32,107 +28,10 @@
           "name": "Scene1",
           "fileName": "W1S1.json",
           "columns": 20,
-          "rows": 15,
-          "order": 0,
-          "metadata": {
-            "properties": {}
-          }
-        },
-        {
-          "id": 2,
-          "worldId": 1,
-          "name": "Scene2",
-          "fileName": "W1S2.json",
-          "columns": 20,
           "rows": 20,
-          "order": 0,
-          "metadata": {
-            "properties": {}
-          }
-        },
-        {
-          "id": 3,
-          "worldId": 1,
-          "name": "Scene3",
-          "fileName": "W1S3.json",
-          "columns": 20,
-          "rows": 20,
-          "order": 0,
-          "metadata": {
-            "properties": {}
-          }
-        },
-        {
-          "id": 4,
-          "worldId": 1,
-          "name": "Scene4",
-          "fileName": "W1S4.json",
-          "columns": 20,
-          "rows": 20,
-          "order": 0,
-          "metadata": {
-            "properties": {}
-          }
-        },
-        {
-          "id": 5,
-          "worldId": 1,
-          "name": "Scene5",
-          "fileName": "W1S5.json",
-          "columns": 20,
-          "rows": 20,
-          "order": 0,
-          "metadata": {
-            "properties": {}
-          }
-        },
-        {
-          "id": 6,
-          "worldId": 1,
-          "name": "Scene6",
-          "fileName": "W1S6.json",
-          "columns": 20,
-          "rows": 20,
-          "order": 0,
-          "metadata": {
-            "properties": {}
-          }
+          "order": 0
         }
       ]
-    },
-    {
-      "id": 2,
-      "name": "Mundo 002",
-      "scenes": [
-        {
-          "id": 1,
-          "worldId": 2,
-          "name": "Scene1",
-          "fileName": "W2S1.json",
-          "columns": 20,
-          "rows": 15
-        },
-        {
-          "id": 2,
-          "worldId": 2,
-          "name": "Scene2",
-          "fileName": "W2S2.json",
-          "columns": 20,
-          "rows": 20
-        },
-        {
-          "id": 3,
-          "worldId": 2,
-          "name": "Scene3",
-          "fileName": "W2S3.json",
-          "columns": 20,
-          "rows": 20
-        }
-      ],
-      "metadata": {
-        "description": "",
-        "properties": {}
-      }
     }
   ]
 }

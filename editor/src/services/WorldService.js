@@ -1,5 +1,5 @@
 import {ProjectParams} from "../constants/ProjectParams";
-import { MapDataModel } from "../models/MapDataModel/MapDataModel";
+import SceneModel from "../models/Scene/SceneModel";
 import SceneState from "../state/SceneState";
 
 
@@ -20,9 +20,7 @@ export default class WorldService {
 
             // 2. Calcula o ID e o nome do novo mundo de forma automática
             const newId = worlds.length > 0 ? Math.max(...worlds.map(w => w.id || 0)) + 1 : 1;
-            const paddedId = String(newId).padStart(ProjectParams.MAX_WORLD_INTERVAL || 3, '0'); // Ajuste se usar params próprios para mundos
-            const name = worldName || `Mundo ${paddedId}`;
-            //const folderName = `World_${paddedId}`;
+            const name = worldName || `World${newId}`;
 
             // 3. Monta a estrutura padrão do objeto World (com seu array de cenas vazio)
             const newWorldData = {
@@ -103,6 +101,7 @@ export default class WorldService {
             const newSceneMeta = {
                 id: newId,
                 worldId: world.id,
+                type: "scene",
                 name: newName,
                 fileName: newFileName,
                 columns: columns,
@@ -136,22 +135,22 @@ export default class WorldService {
                 ],
 
                 backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: columns, rows: rows, data: new Array(columns * rows).fill(0) }],
-                mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: columns, rows: rows, data: new Array(columns * rows).fill(0) }],
+                tileLayers: [{ id: 0, name: 'Tile Layer 1', visible: true, opacity: 1, columns: columns, rows: rows, data: new Array(columns * rows).fill(0) }],
                 eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: columns, rows: rows, data: new Array(columns * rows).fill(0) }],
-                UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: columns, rows: rows, data: new Array(columns * rows).fill(0) }]
+                terrainLayers: [{ id: 0, name: 'Terrain Layer 1', visible: true, opacity: 1, columns: columns, rows: rows, data: new Array(columns * rows).fill(0) }]
             };
 
             // Instancia o novo modelo
-            const newMapModel = new MapDataModel(defaultRawMap);
+            const newSceneModel = new SceneModel(defaultRawMap);
 
             // Garante que o workingScenes existe na session
             if (!session.workingScenes) {
                 session.workingScenes = new SceneState();
             }
 
-            session.workingScenes.setScene(newId, {
+            session.workingScenes.setScene(world.id, newId, {
                 worldId: world.id, // Referência limpa de qual mundo essa cena pertence
-                data: newMapModel,
+                data: newSceneModel,
                 fileName: newFileName,
                 isModified: true,
                 isDeleted: false
@@ -166,7 +165,7 @@ export default class WorldService {
             return {
                 success: true,
                 message: "Cena criada com sucesso no service.",
-                data: newMapModel
+                data: newSceneModel
             };
 
         } catch (error) {
@@ -219,14 +218,15 @@ export default class WorldService {
             }
 
             // Marca como deletada APENAS no cache da sessão (mantém o ProjectModel intacto até o Save)
-            let cachedScene = session.workingScenes.getSceneById(sceneId);
+            let cachedScene = session.workingScenes.getScene(sceneId);
             if (cachedScene) {
                 cachedScene.isDeleted = true;
                 cachedScene.isModified = true;
             } else {
                 // Se a cena não estava carregada no cache, injetamos ela lá só com a flag de deleção
-                session.workingScenes.setScene(sceneId, {
+                session.workingScenes.setScene(world.id, sceneId, {
                     worldId: world.id,
+                    sceneId: sceneId,
                     fileName: sceneExists.fileName,
                     data: null,
                     isDeleted: true,
@@ -290,6 +290,8 @@ export default class WorldService {
 
             // 2. Busca os metadados da cena no ProjectModel
             const result = session.project.getSceneById(worldId, sceneId);
+            console.log("result");
+            console.log(result);
             if (!result) {
                 return {
                     success: false,
@@ -324,23 +326,23 @@ export default class WorldService {
 
             // 4. Instancia o modelo de dados do mapa
             const rawData = fileContent.data ? fileContent.data : fileContent;
-            const mapModel = new MapDataModel(rawData);
+            const sceneModel = new SceneModel(rawData);
 
             // 5. Guarda no cache da sessão para as próximas consultas
-            session.workingScenes.setScene(worldId, sceneId, {
+            session.workingScenes.setScene(worldId,sceneId, {
                 worldId: worldId,
                 sceneId: sceneId,
                 fileName: sceneMeta.fileName,
-                data: mapModel,
+                data: sceneModel,
                 isModified: false,
                 isDeleted: false
             });
 
-            console.log("[worldService] MapDataModel instanciado e cacheado com sucesso.");
+            console.log("[worldService] SceneModel instanciado e cacheado com sucesso.");
             return {
                 success: true,
                 message: "Cena carregada do disco com sucesso.",
-                data: mapModel
+                data: sceneModel
             };
 
         } catch (error) {

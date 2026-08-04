@@ -1,12 +1,14 @@
 
 import ProjectModel from '../models/Project/ProjectModel.js';
-import { MapDataModel } from '../models/MapDataModel/MapDataModel.js';
+import SceneModel from '../models/Scene/SceneModel.js';
 
 import { ImageUtils } from '../utils/ImageUtils.js';
 import { JsonUtils } from '../utils/JsonUtils.js';
 import SceneState from '../state/SceneState.js';
 
 import { ProjectParams } from '../constants/ProjectParams.js';
+import { TilesetEnum, SceneOrientationEnum, SceneRenderOrderEnum } from '../constants/Enums.js';
+import { TilesetDTO } from '../models/Scene/TilesetDTO.js';
 
 
 export default class ProjectService {
@@ -14,19 +16,19 @@ export default class ProjectService {
      * Cria um novo projeto do zero, estruturando pastas, copiando assets,
      * gerando o mundo/cena inicial no disco e populando a sessão.
      */
-   async create(session, projectRootPath, projectName) {
-        if (!projectRootPath || !projectName) {
-            return {
-                success: false,
+    async create(session, projectRootPath, projectName) {
+        if(!projectRootPath || !projectName){
+            return{
+                sucess: false,
                 message: "Caminho raiz e nome do projeto são obrigatórios.",
                 data: null
-            };
+            }
         }
 
         const normalizedPath = projectRootPath.replace(/\\/g, '/');
 
-        try {
-            // 1. Configura o rootPath na sessão
+        try{
+             // 1. Configura o rootPath na sessão
             session.rootPath = normalizedPath;
             session.isModified = false;
 
@@ -34,79 +36,74 @@ export default class ProjectService {
             await window.electronAPI.createDirectory(`${session.rootPath}/${ProjectParams.DIR.SCENES}`);
             await window.electronAPI.createDirectory(`${session.rootPath}/${ProjectParams.DIR.TILESETS}`);
 
-            // 3. Copia os tilesets padrão - TD: TOP DOWN
-            const default_tileset = 'TTD1';
-            const defaultTilesets = [
-                {
-                    fileName: default_tileset + '.png',
-                    sourcePath: `${ProjectParams.DIR.TILESETS}/${default_tileset}.png`,
-                }
-            ];
+            const _tileset = new TilesetDTO({
+                        firstgid:  1,
+                        name: "TTD1",
+                        type: TilesetEnum.TOP_DOWN,
 
-            try {
-                for (const tileset of defaultTilesets) {
-                    await ImageUtils.copyImageTo(
-                        tileset.sourcePath,
+                        tile: {
+                            width:  32,
+                            height: 32,
+                            count:  1024
+                        },
+
+                        columns:  32,
+                        rows:  32,
+
+                        imageFile: {
+                            name: "TTD1.png", 
+                            width:  1024,
+                            height:  1024
+                        },
+                    });
+
+            await ImageUtils.copyImageTo(
+                        `${ProjectParams.DIR.TILESETS}/${_tileset.imageFile.name}`,
                         normalizedPath,
                         `${ProjectParams.DIR.TILESETS}`,
-                        tileset.fileName
+                        _tileset.imageFile.name
                     );
-                }
-                console.log('[ProjectService] Tilesets padrão copiados com sucesso.');
-            } catch (error) {
-                console.warn("[ProjectService] Não foi possível copiar os tilesets padrão automaticamente:", error.message);
-            }
 
-            // 4. Instancia o ProjectModel e cria a estrutura padrão de Mundos/Cenas
+            // 3. Instancia o ProjectModel e cria a estrutura padrão de Mundos/Cenas
             session.project = new ProjectModel({
                 settings: {
                     projectName: projectName,
                     grid: {
-                        default: { columns: 20, rows: 15 }
+                        default: { columns: 20, rows: 20 }
                     }
                 }
             });
 
-            const defaultWorld = session.project.worlds[0];
-            const defaultScene = defaultWorld.scenes[0];
+
+            const _worldManifest = session.project.worlds[0];
+            const _sceneManifest = _worldManifest.scenes[0];
 
             // 5. Salva o arquivo project.json no disco
             await window.electronAPI.saveJsonFile(`${normalizedPath}/${ProjectParams.PROJECT_MANIFEST_FILE}`, session.project.toJSON());
 
             // 6. Cria e salva o arquivo de dados da cena inicial no disco
-            const defaultRawMap = {
-                id: defaultScene.id,
-                worldId: defaultWorld.id,
-                name: 'Scene' + defaultScene.id,
-                fileName: 'W' + defaultWorld.id + 'S' + defaultScene.id + '.json',
-                columns: defaultScene.columns || 20,
-                rows: defaultScene.rows || 15,
+            const sceneModel = new SceneModel({
+                id: _sceneManifest.id,
+                worldId: _worldManifest.id,
+                name: `Scene${_sceneManifest.id}`,
+                fileName: `W${_worldManifest.id}S${_sceneManifest.id}.json`,
+                columns: _sceneManifest.columns || 20,
+                rows: _sceneManifest.rows || 15,
                 tile: { width: 32, height: 32 },
-                orientation: "orthogonal",
-                renderorder: "right-down",
-                tilesets: [
-                    {
-                        firstgid: 1,
-                        name: default_tileset,
-                        columns: 32,
-                        rows: 32,
-                        image: { fileName: default_tileset + ".png", width: 1024, height: 1024 },
-                        tile: { width: 32, height: 32, count: 1024 },
-                        meta: {}
-                    }
-                ],
+                orientation: SceneOrientationEnum.ORTHOGONAL,
+                renderorder: SceneRenderOrderEnum.RIGHT_DOWN,
+                tilesets: [_tileset],
                 backgroundLayers: [{ id: 0, name: 'Background 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-                mapLayers: [{ id: 0, name: 'Map Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-                eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
-                UILayer: [{ id: 0, name: 'UI Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }]
-            };
+                tileLayers: [{ id: 0, name: 'Scene 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }],
+                eventLayers: [{ id: 0, name: 'Event Layer 1', visible: true, opacity: 1, columns: 20, rows: 15}],
+                terrainLayers: [{ id: 0, name: 'Terrain Layer 1', visible: true, opacity: 1, columns: 20, rows: 15, data: new Array(20 * 15).fill(0) }]
+            });
 
-            const initialMapModel = new MapDataModel(defaultRawMap);
-            const mapJsonString = JsonUtils.stringifyWithCompactArrays(initialMapModel.toJSON());
+            const jsonScene = JsonUtils.stringifyWithCompactArrays(sceneModel.toJSON());
 
             await window.electronAPI.saveTextFile(
-                `${normalizedPath}/${ProjectParams.DIR.SCENES}/${defaultScene.fileName}`, 
-                mapJsonString
+                `${normalizedPath}/${ProjectParams.DIR.SCENES}/W${_worldManifest.id}S${_sceneManifest.id}.json`, 
+                jsonScene
             );
 
             // 7. Popula o cache global da sessão com a cena inicial (guardando a referência do worldId) e define a navegação na raiz
@@ -114,18 +111,18 @@ export default class ProjectService {
                 session.workingScenes = new SceneState();
             }
 
-            session.workingScenes.setScene(defaultWorld.id, defaultScene.id, {
-                worldId: defaultWorld.id, // Referência limpa de qual mundo essa cena pertence
-                scenedId: defaultScene.id,
-                data: initialMapModel,
-                fileName: defaultScene.fileName,
+            session.workingScenes.setScene(_worldManifest.id, _sceneManifest.id, {
+                worldId: _worldManifest.id, // Referência limpa de qual mundo essa cena pertence
+                sceneId: _sceneManifest.id,
+                data: sceneModel,
+                fileName: sceneModel.fileName,
                 isModified: false,
                 isDeleted: false
             });
 
             // Ponteiros de navegação atualizados para a raiz da sessão
-            session.navigation.activeWorldId = defaultWorld.id;
-            session.navigation.activeSceneId = defaultScene.id;
+            session.navigation.activeWorldId = _worldManifest.id;
+            session.navigation.activeSceneId = _sceneManifest.id;
 
             console.log("[ProjectService] Projeto criado e estruturado com sucesso no disco!");
 
@@ -138,8 +135,9 @@ export default class ProjectService {
                 }
             };
 
-        } catch (error) {
+        }catch(error){
             console.error("[ProjectService] Erro crítico ao criar projeto:", error);
+
             return {
                 success: false,
                 message: `Erro ao criar projeto no disco: ${error.message}`,
