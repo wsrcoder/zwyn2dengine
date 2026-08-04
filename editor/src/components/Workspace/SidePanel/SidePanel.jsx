@@ -40,19 +40,25 @@ export default function SidePanel({
                     className={`tab-btn ${activeTab === 'worlds' ? 'active' : ''}`}
                     onClick={() => setActiveTab('worlds')}
                 >
-                    Mundos
+                    World
                 </button>
                 <button 
                     className={`tab-btn ${activeTab === 'scene' ? 'active' : ''}`}
                     onClick={() => setActiveTab('scene')}
                 >
-                    Cena
+                    Scene
+                </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'terrains' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('terrains')}
+                >
+                    Terrain
                 </button>
                 <button 
                     className={`tab-btn ${activeTab === 'events' ? 'active' : ''}`}
                     onClick={() => setActiveTab('events')}
                 >
-                    Eventos
+                    Event
                 </button>
             </div>
 
