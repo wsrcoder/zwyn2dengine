@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import SceneRenderer from '../../../../renderers/SceneRenderer';
 import SceneInputHandler from '../../../../handlers/SceneInputHandler';
@@ -10,29 +11,45 @@ export default function SceneEditor({ projectStore }) {
     const inputHandlerRef = useRef(null);
 
     useEffect(() => {
-        // 1. Inicializa o SceneRenderer
+        const session = projectStore ? projectStore.getSession() : null;
+        const tilesetCache = session ? session.tilesetCache : null;
+
+        // 1. Inicializa o SceneRenderer passando o canvas e o tilesetCache
         if (canvasRef.current && !rendererRef.current) {
-            rendererRef.current = new SceneRenderer(canvasRef.current);
+            rendererRef.current = new SceneRenderer(canvasRef.current, tilesetCache);
         }
 
-        // Função helper para buscar e inspecionar a cena ativa
-        const updateSceneToRender = () => {
+        // Função helper para buscar, popular o cache e renderizar a cena ativa
+        const updateSceneToRender = async () => {
             if (!projectStore || !rendererRef.current) return;
 
-            const session = projectStore.getSession();
-            const activeWorldId = session.navigation.activeWorldId;
-            const activeSceneId = session.navigation.activeSceneId;
+            const currentSession = projectStore.getSession();
+            if (!currentSession) return;
+
+            const activeWorldId = currentSession.navigation.activeWorldId;
+            const activeSceneId = currentSession.navigation.activeSceneId;
 
             console.log("🔍 [SceneEditor] Buscando cena ativa - WorldId:", activeWorldId, "SceneId:", activeSceneId);
 
-            const sceneData = session.workingScenes.getScene(activeWorldId, activeSceneId);
+            const sceneData = currentSession.workingScenes.getScene(activeWorldId, activeSceneId);
             console.log("📦 [SceneEditor] SceneData recuperado do cache:", sceneData);
 
             const currentScene = sceneData ? sceneData.data : null;
             console.log("🗺️ [SceneEditor] MapDataModel (currentScene):", currentScene);
 
             if (currentScene) {
+                // Garante que todos os tilesets desta cena estão no cache antes de desenhar
+                if (currentScene.tilesets && Array.isArray(currentScene.tilesets) && currentSession.tilesetCache) {
+                    for (const t of currentScene.tilesets) {
+                        const tilesetId = t.name;
+                        if (tilesetId && !currentSession.tilesetCache.hasTileset(tilesetId)) {
+                            await currentSession.tilesetCache.getOrLoadTileset(tilesetId, t, currentSession.rootPath);
+                        }
+                    }
+                }
+
                 rendererRef.current.setScene(currentScene);
+                rendererRef.current.render();
             } else {
                 console.warn("⚠️ [SceneEditor] Nenhuma cena encontrada para renderizar!");
             }
@@ -40,7 +57,7 @@ export default function SceneEditor({ projectStore }) {
 
         updateSceneToRender();
 
-        // 2. Inicializa o SceneInputHandler com logs no getActiveLayer
+        // 2. Inicializa o SceneInputHandler
         if (canvasRef.current && !inputHandlerRef.current) {
             inputHandlerRef.current = new SceneInputHandler(canvasRef.current, {
                 tileSize: 32,
@@ -48,12 +65,13 @@ export default function SceneEditor({ projectStore }) {
                 onPaint: (tileX, tileY, selection) => {
                     console.log("🎨 [SceneEditor] Pintando em:", { tileX, tileY }, "com seleção:", selection);
 
-                    const session = projectStore.getSession();
-                    const activeWorldId = session.navigation.activeWorldId;
-                    const activeSceneId = session.navigation.activeSceneId;
+                    const activeSession = projectStore.getSession();
+                    if (!activeSession) return;
+
+                    const activeWorldId = activeSession.navigation.activeWorldId;
+                    const activeSceneId = activeSession.navigation.activeSceneId;
     
-                    const sceneData = session.workingScenes.getScene(activeWorldId, activeSceneId);
-                    
+                    const sceneData = activeSession.workingScenes.getScene(activeWorldId, activeSceneId);
                     if (!sceneData || !sceneData.data) return;
 
                     const mapModel = sceneData.data;
@@ -62,35 +80,27 @@ export default function SceneEditor({ projectStore }) {
 
                     if (!layer) return;
 
-                    // Dimensões da camada
                     const cols = layer.columns;
                     const rows = layer.rows;
 
-                    // Selection possui: { width, height, tiles: [...] }
                     const selWidth = selection.width || 1;
                     const selHeight = selection.height || 1;
-                    
-                    // Garante que o array de tiles seja plano
                     const rawTiles = selection.tiles || [0];
                     const selTiles = Array.isArray(rawTiles) ? rawTiles.flat() : [rawTiles];
 
                     let hasChanged = false;
 
-                    // Itera sobre a área do pincel/seleção
+                    // Itera sobre a área da pintura
                     for (let sy = 0; sy < selHeight; sy++) {
                         for (let sx = 0; sx < selWidth; sx++) {
                             const targetX = tileX + sx;
                             const targetY = tileY + sy;
 
-                            // Valida se está dentro dos limites da camada
                             if (targetX >= 0 && targetX < cols && targetY >= 0 && targetY < rows) {
                                 const targetIndex = targetY * cols + targetX;
-                
-                                // Pega o tile correspondente na matriz da seleção
                                 const tileIndexInSelection = sy * selWidth + sx;
                                 const newTileId = selTiles[tileIndexInSelection] ?? 0;
 
-                                // Só altera se o valor for diferente
                                 if (layer.data[targetIndex] !== newTileId) {
                                     layer.data[targetIndex] = newTileId;
                                     hasChanged = true;
@@ -100,17 +110,27 @@ export default function SceneEditor({ projectStore }) {
                     }
 
                     if (hasChanged) {
-                        // 1. Marca a cena como modificada
-                        session.workingScenes.markAsModified(activeWorldId, activeSceneId);
+                        // 1. Marca imediatamente a cena como modificada na session
+                        activeSession.workingScenes.markAsModified(activeWorldId, activeSceneId);
 
-                        // 2. Dispara o evento de cena modificada para atualizar a UI
+                        // 2. Dispara o evento de cena modificada para atualizar a UI geral
                         EventHandler.notify(EDITOR_EVENTS.SCENE_MODIFIED, { worldId: activeWorldId, sceneId: activeSceneId });
 
-                        // 3. Força o renderizador a desenhar o mapa atualizado novamente
-                        if (rendererRef.current) {
-                            rendererRef.current.setScene(mapModel);
-                            rendererRef.current.setTileset(mapModel.tilesets[0]); //nota: buscar pelo tileset atual
-                            rendererRef.current.render();
+                        // 3. Carrega tilesets se necessário e força a renderização imediata na tela
+                        if (rendererRef.current && activeSession.tilesetCache) {
+                            (async () => {
+                                if (mapModel.tilesets && Array.isArray(mapModel.tilesets)) {
+                                    for (const t of mapModel.tilesets) {
+                                        const tilesetId = t.name;
+                                        if (tilesetId && !activeSession.tilesetCache.hasTileset(tilesetId)) {
+                                            await activeSession.tilesetCache.getOrLoadTileset(tilesetId, t, activeSession.rootPath);
+                                        }
+                                    }
+                                }
+
+                                rendererRef.current.setScene(mapModel);
+                                rendererRef.current.render();
+                            })();
                         }
                     }
                 },
@@ -126,28 +146,20 @@ export default function SceneEditor({ projectStore }) {
                         getActiveTool: () => categoryState?.activeTool || null,
                         getTileSelection: () => {
                             const selection = categoryState?.selection;
-                            
-                            // Se a seleção existe mas os tiles estão zerados ou vazios, 
-                            // podemos corrigir usando o TileUtils ou garantindo um fallback funcional
-                            if (selection && (!selection.tiles || selection.tiles.every(t => t === 0))) {
-                                console.warn("⚠️ [SceneEditor] Seleção de tiles veio com IDs zerados. Verifique se o TilesetInputHandler está populando o array com TileUtils.calculateSelection.");
-                            }
-
                             return selection || { width: 1, height: 1, tiles: [1] };
                         }
                     };
                 },
 
                 getActiveLayer: () => {
-                    const session = projectStore.getSession();
-                    const activeWorldId = session.navigation.activeWorldId;
-                    const activeSceneId = session.navigation.activeSceneId;
-                    const sceneData = session.workingScenes.getScene(activeWorldId, activeSceneId);
+                    const activeSession = projectStore.getSession();
+                    if (!activeSession) return null;
+
+                    const activeWorldId = activeSession.navigation.activeWorldId;
+                    const activeSceneId = activeSession.navigation.activeSceneId;
+                    const sceneData = activeSession.workingScenes.getScene(activeWorldId, activeSceneId);
                     
-                    if (!sceneData || !sceneData.data) {
-                        console.warn("⚠️ [SceneEditor] getActiveLayer: SceneData ou data vazios!");
-                        return null;
-                    }
+                    if (!sceneData || !sceneData.data) return null;
                     
                     const _scene = sceneData.data;
                     const activeIndex = _scene.activeLayerIndex ?? 0;
@@ -155,13 +167,12 @@ export default function SceneEditor({ projectStore }) {
                         ? _scene.tileLayers[activeIndex] 
                         : null;
 
-                    console.log("📑 [SceneEditor] Camada ativa encontrada:", layer);
                     return layer;
                 }
             });
         }
 
-        // Escuta os eventos globais para atualizar a cena
+        // Escuta os eventos globais
         const unsubscribeProjectLoaded = EventHandler.subscribe(EDITOR_EVENTS.PROJECT_LOADED, () => {
             updateSceneToRender();
         });
@@ -184,7 +195,10 @@ export default function SceneEditor({ projectStore }) {
                 inputHandlerRef.current = null;
             }
             if (rendererRef.current) {
-                rendererRef.current.destroy();
+                // Caso tenha método destroy na sua classe renderer, é chamado aqui
+                if (typeof rendererRef.current.destroy === 'function') {
+                    rendererRef.current.destroy();
+                }
                 rendererRef.current = null;
             }
         };

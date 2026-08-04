@@ -1,35 +1,66 @@
+import { ProjectParams } from "../constants/ProjectParams";
 
-// editor/src/renderers/SceneRenderer.js
 
 export default class SceneRenderer {
-    constructor(canvasElement, projectStore) {
+    constructor(canvasElement) {
         this.canvas = canvasElement;
         this.ctx = this.canvas.getContext('2d');
-        this.projectStore = projectStore;
         
-        this.isAnimating = false;
-        
-        // Vincula o contexto para garantir o escopo correto no resize
+        this.currentScene = null;
+        this.currentTileset = null;
+        this.loadedImage = null;
+
         this.handleResize = this.handleResize.bind(this);
         window.addEventListener('resize', this.handleResize);
         
-        this.init();
+        setTimeout(() => this.handleResize(), 0);
     }
 
-    init() {
-        this.handleResize();
+    setScene(sceneModel) {
+        this.currentScene = sceneModel;
         this.render();
-        // Inicializações adicionais ( listeners de mouse para zoom/pan, etc. )
     }
 
-    updateStore(newStore){
-        this.projectStore = newStore;
-        this.render();
+    async setTileset(tilesetData) {
+        if (!tilesetData) return;
+
+        this.currentTileset = tilesetData;
+        const imagePath = `${ProjectParams.DIR.TILESETS}/${tilesetData.imageFile?.name}`;
+
+        if (!imagePath) {
+            this.loadedImage = null;
+            this.render();
+            return;
+        }
+
+        try {
+            // Pede para o Electron carregar o binário em base64 com segurança
+            const dataUrl = await window.electronAPI.loadBinaryFile(imagePath);
+
+            await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    this.loadedImage = img;
+                    this.render();
+                    resolve();
+                };
+                img.onerror = (err) => {
+                    console.error("❌ [SceneRenderer] Erro ao instanciar imagem do tileset:", err);
+                    this.loadedImage = null;
+                    this.render();
+                    reject(err);
+                };
+                img.src = dataUrl;
+            });
+        } catch (error) {
+            console.error("❌ [SceneRenderer] Falha ao carregar binário do tileset via Electron:", error);
+            this.loadedImage = null;
+            this.render();
+        }
     }
 
     handleResize() {
         if (!this.canvas) return;
-        // Faz o canvas preencher dinamicamente o tamanho do container pai
         const parent = this.canvas.parentElement;
         if (parent) {
             this.canvas.width = parent.clientWidth;
@@ -39,30 +70,54 @@ export default class SceneRenderer {
     }
 
     render() {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.currentScene) return;
 
-        // Limpa a tela
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const workingScenes = this.projectStore?.session?.workingScenes;
+        const { tileLayers, tileWidth = 32, tileHeight = 32 } = this.currentScene;
 
-        // 1. Blindagem: Se não existir nada, encerra com segurança
-        if (!workingScenes) return;
+        if (!tileLayers || !Array.isArray(tileLayers)) return;
 
-        // 2. Converte para array caso seja um Objeto/Dicionário (ex: { id1: scene1, id2: scene2 })
-        const scenesArray = Array.isArray(workingScenes) 
-            ? workingScenes 
-            : Object.values(workingScenes);
+        for (const layer of tileLayers) {
+            if (!layer || !layer.visible || !layer.data) continue;
 
-        // 3. Itera com segurança total
-        for (const scene of scenesArray) {
-            console.log("Renderizando cena:", scene);
-            // Lógica de desenho aqui...
+            const cols = layer.columns;
+            const rows = layer.rows;
+            const data = layer.data;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const index = y * cols + x;
+                    const tileId = data[index];
+
+                    if (!tileId || tileId === 0) continue;
+
+                    const destX = x * tileWidth;
+                    const destY = y * tileHeight;
+
+                    if (this.currentTileset && this.loadedImage) {
+                        const tsColumns = this.currentTileset.columns || Math.floor(this.loadedImage.width / tileWidth);
+                        
+                        const sourceX = (tileId % tsColumns) * tileWidth;
+                        const sourceY = Math.floor(tileId / tsColumns) * tileHeight;
+
+                        this.ctx.drawImage(
+                            this.loadedImage,
+                            sourceX, sourceY, tileWidth, tileHeight,
+                            destX, destY, tileWidth, tileHeight
+                        );
+                    } else {
+                        this.ctx.fillStyle = '#444';
+                        this.ctx.fillRect(destX, destY, tileWidth, tileHeight);
+                        this.ctx.strokeStyle = '#666';
+                        this.ctx.strokeRect(destX, destY, tileWidth, tileHeight);
+                    }
+                }
+            }
         }
     }
 
     destroy() {
         window.removeEventListener('resize', this.handleResize);
-        // Para loops de animação ou limpa eventos se necessário
     }
 }
