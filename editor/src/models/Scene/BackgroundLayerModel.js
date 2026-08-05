@@ -1,11 +1,12 @@
 
-import { BackgroundLayerEnum } from "../../constants/Enums.js";
+import { BackgroundLayerEnum, LayerCategoryEnum } from "../../constants/Enums.js";
 
 export class BackgroundLayerModel {
     constructor(data = {}) {
         this.id = data.id ?? 0;
         this.name = data.name ?? "Background Layer";
-        this.type = data.type ?? "image"; // "image" ou "tiles"
+        this.type = LayerCategoryEnum.BACKGROUND; // "background" ou LayerType.BACKGROUND
+        this.BackgroundType = data.BackgroundType ?? BackgroundLayerEnum.IMAGE; // "image" ou "tiles"
         this.visible = data.visible ?? true;
         this.opacity = data.opacity ?? 1;
 
@@ -20,11 +21,11 @@ export class BackgroundLayerModel {
         };
 
         // Atributo condicional baseado no tipo (Economia de dados!)
-        if (this.type === BackgroundLayerEnum.IMAGE) {
+        if (this.BackgroundType === BackgroundLayerEnum.IMAGE) {
             this.imagePath = data.imagePath ?? "";
             this.repeatX = data.repeatX ?? true;
             this.repeatY = data.repeatY ?? false;
-        } else if (this.type === BackgroundLayerEnum.TILE) {
+        } else if (this.BackgroundType === BackgroundLayerEnum.TILE) {
             this.columns = data.columns ?? 20;
             this.rows = data.rows ?? 15;
             this.data = data.data || new Array(this.columns * this.rows).fill(0);
@@ -38,6 +39,7 @@ export class BackgroundLayerModel {
             id: this.id,
             name: this.name,
             type: this.type,
+            BackgroundType: this.BackgroundType,
             visible: this.visible,
             opacity: this.opacity,
             parallaxFactor: { ...this.parallaxFactor },

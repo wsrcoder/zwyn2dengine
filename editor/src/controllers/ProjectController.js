@@ -9,9 +9,9 @@ import { EventHandler } from '../core/EventBus.js';
 
 
 export default class ProjectController {
-    constructor(projectStore, projectService) {
+    constructor(projectStore) {
         this.projectStore = projectStore;
-        this.projectService = projectService;
+        this.projectService = new ProjectService();
     }
 
     /**

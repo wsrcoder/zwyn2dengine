@@ -1,11 +1,12 @@
 
+import { LayerCategoryEnum } from "../../constants/Enums.js";
 import {GameEventModel} from "./GameEventModel.js";
 
 export class EventLayerModel {
     constructor(data = {}) {
         this.id = data.id ?? 0;
         this.name = data.name ?? "Event Layer 1";
-        this.type = "event"; // ou LayerType.EVENT
+        this.type = data.type ?? LayerCategoryEnum.EVENT;
         this.visible = data.visible ?? true;
         this.opacity = data.opacity ?? 1;
         

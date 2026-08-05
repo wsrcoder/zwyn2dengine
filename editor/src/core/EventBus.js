@@ -1,7 +1,7 @@
 
 // editor/src/state/EventBus.js
 
-export class EventBus {
+export class EventBus { //Mudar para EventHandler para evitar confusão com o EventBus do Node.js
     constructor() {
         this.listeners = {};
     }

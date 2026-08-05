@@ -13,13 +13,16 @@
  * demanda (durante a física/movimento) para validar se um espaço é caminhável ou 
  * aplicar modificadores de estado (ex: gelo, lama, lava).
  */
+
+import { LayerCategoryEnum } from "../../constants/Enums.js";
+
 export class TerrainLayerModel {
     constructor(data = {}) {
         this.id = data.id ?? 0;
         this.name = data.name ?? "Terrain Layer";
         this.visible = data.visible ?? true; // Útil no editor para ligar/desligar a visualização da grade lógica
         this.opacity = data.opacity ?? 1; 
-        this.type = data.type ?? "terrain";
+        this.type = data.type ?? LayerCategoryEnum.TERRAIN;
 
         // Dimensões do grid lógico (geralmente acompanham as dimensões da cena)
         this.columns = data.columns ?? 20;

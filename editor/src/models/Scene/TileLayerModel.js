@@ -1,11 +1,10 @@
-
-import { LayerType } from "../../constants/LayerType";
+import { LayerCategoryEnum } from "../../constants/Enums.js";
 
 export class TileLayerModel {
     constructor(data = {}) {
         this.id = data.id ?? 1;
         this.name = data.name ?? `Layer ${this.id}`;
-        this.type = data.type ?? LayerType.TILE;
+        this.type = data.type ?? LayerCategoryEnum.TILE;
         this.visible = data.visible ?? true;
         this.opacity = data.opacity ?? 1.0;
         this.columns = data.columns ?? 20;
@@ -19,7 +18,7 @@ export class TileLayerModel {
     getTileAt(x, y) {
         if (x < 0 || x >= this.columns || y < 0 || y >= this.rows) return null;
         
-        if (this.type !== LayerType.TILE && this.type !== LayerType.BACKGROUND) {
+        if (this.type !== LayerCategoryEnum.TILE && this.type !== LayerCategoryEnum.BACKGROUND) {
             if (!this.data || this.data.length === 0) return null;
         }
 
@@ -30,7 +29,7 @@ export class TileLayerModel {
     setTileAt(x, y, newTileId) {
         if (x < 0 || x >= this.columns || y < 0 || y >= this.rows) return false;
         
-        if (this.type !== LayerType.TILE && this.type !== LayerType.BACKGROUND) {
+        if (this.type !== LayerCategoryEnum.TILE && this.type !== LayerCategoryEnum.BACKGROUND) {
             return false; 
         }
 

@@ -1,5 +1,6 @@
 
-import { LayerType } from "../../constants/LayerType.js";
+
+import { LayerCategoryEnum } from "../../constants/Enums.js";
 import { TileLayerModel } from "./TileLayerModel.js";
 import { BackgroundLayerModel } from "./BackgroundLayerModel.js";
 import { TilesetModel } from "./TilesetModel.js";
@@ -30,26 +31,28 @@ export default class SceneModel {
 
         // 1. Backgrounds (Agora usando BackgroundLayerModel)
         this.backgroundLayers = (data.backgroundLayers || []).map((layerData, index) => 
-            this.createBackgroundLayer(layerData, LayerType.BACKGROUND, 'Background Layer', index)
+            this.createBackgroundLayer(layerData, LayerCategoryEnum.BACKGROUND, 'Background Layer', index)
         );
 
         // 2. Tile Layers
         this.tileLayers = (data.tileLayers || []).map((layerData, index) => 
-            this.createTileLayer(layerData, LayerType.TILE, 'Map Layer', index)
+            this.createTileLayer(layerData, LayerCategoryEnum.TILE, 'Tile Layer', index)
         );
 
-        // 3. Events
-        this.eventLayers = (data.eventLayers || []).map((layerData, index) => 
-            this.createGameEventLayer(layerData, LayerType.EVENT, 'Event Layer', index)
-        );
-
-        // 4. Terrain Layers
+         // 3. Terrain Layers
         this.terrainLayers = (data.terrainLayers || []).map((layerData, index) => 
-            this.createTerrainLayer(layerData, LayerType.TERRAIN, 'Terrain Layer', index)
+            this.createTerrainLayer(layerData, LayerCategoryEnum.TERRAIN, 'Terrain Layer', index)
         );
+
+        // 4. Events
+        this.eventLayers = (data.eventLayers || []).map((layerData, index) => 
+            this.createGameEventLayer(layerData, LayerCategoryEnum.EVENT, 'Event Layer', index)
+        );
+
+       
     }
 
-    createBackgroundLayer(layerData = {}, defaultType = LayerType.BACKGROUND, defaultNamePrefix = 'Background Layer', index = 0) {
+    createBackgroundLayer(layerData = {}, defaultType = LayerCategoryEnum.BACKGROUND, defaultNamePrefix = 'Background Layer', index = 0) {
         const layerNum = index + 1;
         
         const normalizedData = {
@@ -84,7 +87,7 @@ export default class SceneModel {
         return new BackgroundLayerModel(normalizedData);
     }
 
-    createTileLayer(layerData = {}, defaultType = LayerType.TILE, defaultNamePrefix = 'Layer', index = 0) {
+    createTileLayer(layerData = {}, defaultType = LayerCategoryEnum.TILE, defaultNamePrefix = 'Layer', index = 0) {
         const layerNum = index + 1;
         
         const normalizedData = {
@@ -102,7 +105,7 @@ export default class SceneModel {
         return new TileLayerModel(normalizedData);
     }
 
-    createGameEventLayer(layerData = {}, defaultType = LayerType.EVENT, defaultNamePrefix = 'Event Layer', index = 0) {
+    createGameEventLayer(layerData = {}, defaultType = LayerCategoryEnum.EVENT, defaultNamePrefix = 'Event Layer', index = 0) {
         const layerNum = index + 1;
         
         const normalizedData = {
@@ -118,7 +121,7 @@ export default class SceneModel {
         return new EventLayerModel(normalizedData);
     }
 
-    createTerrainLayer(layerData = {}, defaultType = LayerType.TERRAIN, defaultNamePrefix = 'Terrain Layer', index = 0) {
+    createTerrainLayer(layerData = {}, defaultType = LayerCategoryEnum.TERRAIN, defaultNamePrefix = 'Terrain Layer', index = 0) {
         const layerNum = index + 1;
         
         const normalizedData = {

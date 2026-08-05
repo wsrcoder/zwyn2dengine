@@ -10,18 +10,14 @@ import WorkspaceEditor from './components/workspace/WorkspaceEditor';
 
 // Instâncias da sua arquitetura
 import ProjectStore from './core/ProjectStore';
-import ProjectService from './services/ProjectService';
-import WorldService from './services/WorldService';
 import ProjectController from './controllers/ProjectController';
 import WorldController from './controllers/WorldController';
 
 import './App.css';
 
 const projectStore = new ProjectStore();
-const projectService = new ProjectService();
-const worldService = new WorldService();
-const projectController = new ProjectController(projectStore, projectService);
-const worldController = new WorldController(projectStore, worldService);
+const projectController = new ProjectController(projectStore);
+const worldController = new WorldController(projectStore);
 
 export default function App() {
     // Estado global de qual aba está ativa no painel lateral

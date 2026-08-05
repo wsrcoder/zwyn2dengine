@@ -6,9 +6,9 @@ import { EventHandler } from "../core/EventBus";
 import { EDITOR_EVENTS } from "../core/EventTypes";
 
 export default class WorldController {
-    constructor(projectStore, worldService) {
+    constructor(projectStore) {
         this.projectStore = projectStore;
-        this.worldService = worldService;
+        this.worldService = new worldService();
     }
 
     async createWorld(worldName = null) {

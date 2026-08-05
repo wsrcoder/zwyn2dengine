@@ -1,46 +1,102 @@
-import React from 'react';
+
+import React, { useState } from 'react';
+import TileLayerList from './LayerList/TileLayerList.jsx';
 import './LayerPanel.css';
 
-export default function LayerPanel({ activeScene, layers }) {
-    return (
-        <div className="sidebar-section">
-            <div className="section-header">
-                <span>CAMADAS {activeScene ? `(${activeScene.name})` : ''}</span>
-                <button className="small-action-btn" title="Nova Camada">+ Nova</button>
-            </div>
-            
-            <div className="section-content-layers">
-                {layers.length === 0 ? (
-                    <span className="empty-text">
-                        {activeScene ? 'Nenhuma camada nesta cena' : 'Nenhuma cena ativa'}
-                    </span>
-                ) : (
-                    <ul className="layers-list">
-                        {layers.map((layer, index) => (
-                            <li key={layer.id || index} className="layer-item">
-                                {/* Drag handle */}
-                                <span className="drag-handle" title="Reordenar">⠿</span>
+// Importação futura dos componentes específicos de cada aba
+// import TileLayerList from './layers/TileLayerList';
+// import BackgroundLayerList from './layers/BackgroundLayerList';
+// import TerrainLayerList from './layers/TerrainLayerList';
+// import EventLayerList from './layers/EventLayerList';
 
-                                {/* Mini tag de identificação no início da linha */}
-                                <span className={`layer-type-badge ${layer.type}`}>
-                                    {layer.typeLabel}
-                                </span>
-                                
-                                {/* Botão de Visibilidade */}
-                                <button className="icon-btn" title="Alternar Visibilidade">👁</button>
-                                
-                                {/* Nome da Camada */}
-                                <span className="layer-name">{layer.name || `Camada ${index + 1}`}</span>
-                                
-                                {/* Ações à direita */}
-                                <div className="layer-actions">
-                                    <button className="icon-btn" title="Bloquear">🔓</button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
+export default function LayerPanel({ activeScene, projectStore }) {
+    // Estado para controlar a aba ativa ('background' | 'tile' | 'terrain' | 'event')
+    const [activeTab, setActiveTab] = useState('tile');
+    
+    // Estado opcional para controlar qual camada está selecionada na cena atual
+    const [activeLayerIndex, setActiveLayerIndex] = useState(0);
+
+    // Renderiza o conteúdo correspondente à aba ativa
+    const renderActiveTabContent = () => {
+        if (!activeScene) {
+            return (
+                <div className="section-content-layers">
+                    <span className="empty-text">Nenhuma cena ativa</span>
+                </div>
+            );
+        }
+
+        switch (activeTab) {
+            case 'background':
+                // return <BackgroundLayerList activeScene={activeScene} projectStore={projectStore} />;
+                return <PlaceholderTabContent type="Background" />;
+            case 'tile':
+                // return <TileLayerList activeScene={activeScene} projectStore={projectStore} />;
+                return (
+                    <TileLayerList 
+                        activeScene={activeScene} 
+                        projectStore={projectStore} 
+                        activeLayerIndex={activeLayerIndex}
+                        onLayerSelect={(index) => setActiveLayerIndex(index)}
+                    />
+                );
+            case 'terrain':
+                // return <TerrainLayerList activeScene={activeScene} projectStore={projectStore} />;
+                return <PlaceholderTabContent type="Terrain" />;
+            case 'event':
+                // return <EventLayerList activeScene={activeScene} projectStore={projectStore} />;
+                return <PlaceholderTabContent type="Event" />;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="sidebar-section layer-panel">
+            {/* 1. Abas Superiores */}
+            <div className="layer-tabs-header">
+                <button 
+                    className={`layer-tab-btn ${activeTab === 'background' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('background')}
+                >
+                    Background
+                </button>
+                <button 
+                    className={`layer-tab-btn ${activeTab === 'tile' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('tile')}
+                >
+                    Tile
+                </button>
+                <button 
+                    className={`layer-tab-btn ${activeTab === 'terrain' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('terrain')}
+                >
+                    Terrain
+                </button>
+                <button 
+                    className={`layer-tab-btn ${activeTab === 'event' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('event')}
+                >
+                    Event
+                </button>
             </div>
+
+            {/* 2. Cabeçalho da Seção Ativa (Sem o botão genérico "Novo") */}
+            <div className="section-header">
+                <span> {activeTab.toUpperCase()} {activeScene ? `(${activeScene.name})` : ''}</span>
+            </div>
+
+            {/* 3. Conteúdo Dinâmico da Aba Ativa */}
+            {renderActiveTabContent()}
+        </div>
+    );
+}
+
+// Componente temporário para ilustrar onde cada aba exibirá sua lista customizada com seus próprios botões
+function PlaceholderTabContent({ type }) {
+    return (
+        <div className="section-content-layers">
+            <span className="empty-text">Gerenciamento de {type}s em breve...</span>
         </div>
     );
 }
